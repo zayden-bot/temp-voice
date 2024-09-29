@@ -4,17 +4,25 @@ pub mod events;
 
 use std::collections::HashMap;
 
-use serenity::all::{ChannelId, Context, GuildId, LightMethod, Request, Route, UserId, VoiceState};
+use serenity::all::{
+    ChannelId, Context, GuildId, LightMethod, Request, Route, User, UserId, VoiceState,
+};
 use serenity::prelude::TypeMapKey;
 
 pub use commands::VoiceCommand;
 pub use error::Error;
 use error::Result;
 
+pub struct State {
+    pub channel_id: Option<ChannelId>,
+    pub guild_id: GuildId,
+    pub user: User,
+}
+
 pub struct VoiceStateCache;
 
 impl TypeMapKey for VoiceStateCache {
-    type Value = HashMap<UserId, Option<ChannelId>>;
+    type Value = HashMap<UserId, State>;
 }
 
 pub async fn get_voice_state(

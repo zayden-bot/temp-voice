@@ -34,7 +34,10 @@ pub async fn channel_deleter(ctx: &Context, old: Option<&VoiceState>) -> Result<
             .get::<VoiceStateCache>()
             .expect("Expected VoiceStateCache in TypeMap");
 
-        cache.values().filter(|id| **id == Some(channel_id)).count()
+        cache
+            .values()
+            .filter(|id| id.channel_id == Some(channel_id))
+            .count()
     };
 
     if users == 0 {
