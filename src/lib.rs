@@ -11,7 +11,7 @@ pub use commands::VoiceCommand;
 pub use error::Error;
 use error::Result;
 
-struct VoiceStateCache;
+pub struct VoiceStateCache;
 
 impl TypeMapKey for VoiceStateCache {
     type Value = HashMap<UserId, Option<ChannelId>>;
