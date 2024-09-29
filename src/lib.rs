@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use serenity::all::{ChannelId, Context, GuildId, LightMethod, Request, Route, UserId, VoiceState};
 use serenity::prelude::TypeMapKey;
 
+pub use commands::VoiceCommand;
 pub use error::Error;
 use error::Result;
 
