@@ -34,7 +34,7 @@ use crate::{get_voice_state, Error, Result};
 pub struct VoiceCommand;
 
 impl VoiceCommand {
-    async fn run(ctx: &Context, interaction: &CommandInteraction) -> Result<()> {
+    pub async fn run(ctx: &Context, interaction: &CommandInteraction) -> Result<()> {
         let guild_id = interaction.guild_id.ok_or(Error::CommandNotInGuild)?;
 
         let command = &interaction.data.options()[0];
@@ -133,7 +133,7 @@ impl VoiceCommand {
         Ok(())
     }
 
-    fn register() -> CreateCommand {
+    pub fn register() -> CreateCommand {
         CreateCommand::new("voice")
             .description("Commands for creating and managing temporary voice channels.")
             .add_option(
