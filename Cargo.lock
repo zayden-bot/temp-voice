@@ -1686,7 +1686,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "temp_voice"
+name = "temp-voice"
 version = "0.1.0"
 dependencies = [
  "serenity",
