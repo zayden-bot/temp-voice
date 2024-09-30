@@ -1,6 +1,7 @@
 pub mod commands;
 mod error;
 pub mod events;
+pub mod voice_channel_manager;
 
 use std::collections::HashMap;
 
@@ -12,6 +13,7 @@ use serenity::prelude::TypeMapKey;
 pub use commands::VoiceCommand;
 pub use error::Error;
 use error::Result;
+pub use voice_channel_manager::VoiceChannelManager;
 
 pub struct State {
     pub channel_id: Option<ChannelId>,

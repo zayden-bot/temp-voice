@@ -1,14 +1,14 @@
 use serenity::all::{
-    CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
-    GuildChannel, PermissionOverwrite, PermissionOverwriteType, Permissions, ResolvedOption,
-    ResolvedValue,
+    CommandInteraction, Context, EditInteractionResponse, GuildChannel, PermissionOverwrite,
+    PermissionOverwriteType, Permissions, ResolvedOption, ResolvedValue,
 };
+use serenity::all::{CreateMessage, Mentionable};
 use zayden_core::parse_options;
 
 use crate::Error;
 use crate::VoiceChannelManager;
 
-pub async fn trust(
+pub async fn invite(
     ctx: &Context,
     interaction: &CommandInteraction,
     options: &Vec<ResolvedOption<'_>>,
@@ -29,32 +29,35 @@ pub async fn trust(
         let channel_data = manager
             .get_mut(&channel.id)
             .expect("Expected channel in manager");
-        channel_data.add_trusted(user.id);
+        channel_data.create_invite(user.id);
     }
 
     channel
         .create_permission(
             ctx,
             PermissionOverwrite {
-                allow: Permissions::VIEW_CHANNEL
-                    | Permissions::MANAGE_CHANNELS
-                    | Permissions::CONNECT
-                    | Permissions::SET_VOICE_CHANNEL_STATUS,
+                allow: Permissions::VIEW_CHANNEL | Permissions::CONNECT,
                 deny: Permissions::empty(),
                 kind: PermissionOverwriteType::Member(user.id),
             },
         )
         .await?;
 
-    interaction
-        .create_response(
+    let result = user
+        .direct_message(
             ctx,
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content("Set user to trusted.")
-                    .ephemeral(true),
-            ),
+            CreateMessage::new()
+                .content(format!("You have been invited to {}.", channel.mention())),
         )
+        .await;
+
+    let content = match result {
+        Ok(_) => "Sent invite to user.",
+        Err(_) => "Failed to direct message user.",
+    };
+
+    interaction
+        .edit_response(ctx, EditInteractionResponse::new().content(content))
         .await?;
 
     Ok(())

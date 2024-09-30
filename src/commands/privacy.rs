@@ -1,7 +1,7 @@
 use serenity::all::{
     CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
-    EditChannel, GuildChannel, PermissionOverwrite, PermissionOverwriteType, Permissions,
-    ResolvedOption, ResolvedValue, RoleId,
+    GuildChannel, PermissionOverwrite, PermissionOverwriteType, Permissions, ResolvedOption,
+    ResolvedValue, RoleId,
 };
 use zayden_core::parse_options;
 
@@ -12,7 +12,7 @@ pub async fn privacy(
     interaction: &CommandInteraction,
     options: &Vec<ResolvedOption<'_>>,
     everyone_role: RoleId,
-    mut channel: GuildChannel,
+    channel: GuildChannel,
 ) -> Result<(), Error> {
     let options = parse_options(options);
 
@@ -21,39 +21,31 @@ pub async fn privacy(
         _ => "visible",
     };
 
-    let mut perms = vec![PermissionOverwrite {
-        allow: Permissions::all(),
-        deny: Permissions::empty(),
-        kind: PermissionOverwriteType::Member(interaction.user.id),
-    }];
-
-    match privacy {
-        "lock" => perms.push(PermissionOverwrite {
+    let perm = match privacy {
+        "lock" => PermissionOverwrite {
             allow: Permissions::empty(),
             deny: Permissions::CONNECT,
             kind: PermissionOverwriteType::Role(everyone_role),
-        }),
-        "unlock" => perms.push(PermissionOverwrite {
+        },
+        "unlock" => PermissionOverwrite {
             allow: Permissions::CONNECT,
             deny: Permissions::empty(),
             kind: PermissionOverwriteType::Role(everyone_role),
-        }),
-        "invisible" => perms.push(PermissionOverwrite {
+        },
+        "invisible" => PermissionOverwrite {
             allow: Permissions::empty(),
             deny: Permissions::VIEW_CHANNEL,
             kind: PermissionOverwriteType::Role(everyone_role),
-        }),
-        "visible" => perms.push(PermissionOverwrite {
+        },
+        "visible" => PermissionOverwrite {
             allow: Permissions::VIEW_CHANNEL,
             deny: Permissions::empty(),
             kind: PermissionOverwriteType::Role(everyone_role),
-        }),
+        },
         _ => unreachable!("Invalid privacy option"),
     };
 
-    channel
-        .edit(ctx, EditChannel::new().permissions(perms))
-        .await?;
+    channel.create_permission(ctx, perm).await?;
 
     interaction
         .create_response(

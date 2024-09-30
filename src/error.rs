@@ -3,10 +3,18 @@ use zayden_core::ErrorResponse;
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
+pub enum PermissionError {
+    NotOwner,
+    NotTrusted,
+}
+
+#[derive(Debug)]
 pub enum Error {
     CommandNotInGuild,
     MemberNotInVoiceChannel,
-    MissingPermissions,
+    OwnerInChannel,
+    InvalidPassword,
+    MissingPermissions(PermissionError),
 
     Serenity(serenity::Error),
 }
@@ -18,8 +26,15 @@ impl ErrorResponse for Error {
             Error::MemberNotInVoiceChannel => {
                 String::from("You must be in a voice channel to use this command.")
             }
-            Error::MissingPermissions => {
+            Error::OwnerInChannel => {
+                String::from("Cannot use this command while the channel owner is present.")
+            }
+            Error::InvalidPassword => String::from("Invalid password."),
+            Error::MissingPermissions(PermissionError::NotOwner) => {
                 String::from("Only the channel owner can use this command.")
+            }
+            Error::MissingPermissions(PermissionError::NotTrusted) => {
+                String::from("You must be trusted to use this command.")
             }
             _ => String::new(),
         }

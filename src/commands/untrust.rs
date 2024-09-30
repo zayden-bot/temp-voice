@@ -4,7 +4,7 @@ use serenity::all::{
 };
 use zayden_core::parse_options;
 
-use crate::Error;
+use crate::{Error, VoiceChannelManager};
 
 pub async fn untrust(
     ctx: &Context,
@@ -18,6 +18,17 @@ pub async fn untrust(
         Some(ResolvedValue::User(user, _member)) => user,
         _ => unreachable!("User option is required"),
     };
+
+    {
+        let mut data = ctx.data.write().await;
+        let manager = data
+            .get_mut::<VoiceChannelManager>()
+            .expect("Expected VoiceChannelManager in TypeMap");
+        let channel_data = manager
+            .get_mut(&channel.id)
+            .expect("Expected channel in manager");
+        channel_data.remove_trusted(user.id);
+    }
 
     channel
         .delete_permission(ctx, PermissionOverwriteType::Member(user.id))

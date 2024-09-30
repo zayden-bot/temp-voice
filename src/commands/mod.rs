@@ -1,35 +1,47 @@
 mod bitrate;
 mod block;
+mod claim;
 mod create;
 mod delete;
+mod invite;
+mod join;
 mod kick;
 mod limit;
 mod name;
+mod password;
 mod privacy;
 mod region;
+mod reset;
+mod transfer;
 mod trust;
 mod unblock;
 mod untrust;
 
-pub use bitrate::bitrate;
-pub use block::block;
-pub use create::create;
-pub use delete::delete;
-pub use kick::kick;
-pub use limit::limit;
-pub use name::name;
-pub use privacy::privacy;
-pub use region::region;
-pub use trust::trust;
-pub use unblock::unblock;
-pub use untrust::untrust;
+use bitrate::bitrate;
+use block::block;
+use claim::claim;
+use create::create;
+use delete::delete;
+use invite::invite;
+use join::join;
+use kick::kick;
+use limit::limit;
+use name::name;
+use password::password;
+use privacy::privacy;
+use region::region;
+use reset::reset;
+use transfer::transfer;
+use trust::trust;
+use unblock::unblock;
+use untrust::untrust;
 
 use serenity::all::{
     CommandInteraction, CommandOptionType, Context, CreateCommand, CreateCommandOption,
     PermissionOverwriteType, Permissions, ResolvedValue,
 };
 
-use crate::{get_voice_state, Error, Result};
+use crate::{error::PermissionError, get_voice_state, Error, Result};
 
 pub struct VoiceCommand;
 
@@ -44,9 +56,16 @@ impl VoiceCommand {
             _ => unreachable!("Subcommand is required"),
         };
 
-        if command.name == "create" {
-            create(ctx, interaction, guild_id, options).await?;
-            return Ok(());
+        match command.name {
+            "create" => {
+                create(ctx, interaction, guild_id, options).await?;
+                return Ok(());
+            }
+            "join" => {
+                join(ctx, interaction, options, guild_id).await?;
+                return Ok(());
+            }
+            _ => {}
         }
 
         let voice_state = get_voice_state(ctx, guild_id, interaction.user.id)
@@ -66,8 +85,10 @@ impl VoiceCommand {
             overwrite.kind == PermissionOverwriteType::Member(interaction.user.id)
                 && overwrite.allow.contains(Permissions::MANAGE_CHANNELS)
         }) {
-            return Err(Error::MissingPermissions);
+            return Err(Error::MissingPermissions(PermissionError::NotTrusted));
         }
+
+        let everyone_role = guild_id.everyone_role();
 
         match command.name {
             "name" => {
@@ -77,7 +98,7 @@ impl VoiceCommand {
                 limit(ctx, interaction, options, channel).await?;
             }
             "privacy" => {
-                privacy(ctx, interaction, options, guild_id.everyone_role(), channel).await?;
+                privacy(ctx, interaction, options, everyone_role, channel).await?;
             }
             "waiting" => {
                 // waiting(ctx, interaction, guild_id, options).await?;
@@ -89,7 +110,7 @@ impl VoiceCommand {
                 untrust(ctx, interaction, options, channel).await?;
             }
             "invite" => {
-                // invite(ctx, interaction, guild_id, options).await?;
+                invite(ctx, interaction, options, channel).await?;
             }
             "kick" => {
                 kick(ctx, interaction, options, guild_id).await?;
@@ -98,16 +119,16 @@ impl VoiceCommand {
                 region(ctx, interaction, options, channel).await?;
             }
             "block" => {
-                block(ctx, interaction, options, channel).await?;
+                block(ctx, interaction, options, guild_id, channel).await?;
             }
             "unblock" => {
                 unblock(ctx, interaction, options, channel).await?;
             }
             "claim" => {
-                // claim(ctx, interaction, guild_id, options).await?;
+                claim(ctx, interaction, channel).await?;
             }
             "transfer" => {
-                // transfer(ctx, interaction, guild_id, options).await?;
+                transfer(ctx, interaction, options, channel).await?;
             }
             "delete" => {
                 delete(ctx, interaction, channel).await?;
@@ -119,13 +140,10 @@ impl VoiceCommand {
                 // info(ctx, interaction, guild_id, options).await?;
             }
             "password" => {
-                // password(ctx, interaction, guild_id, options).await?;
-            }
-            "join" => {
-                // join(ctx, interaction, guild_id, options).await?;
+                password(ctx, interaction, options, everyone_role, channel).await?;
             }
             "reset" => {
-                // reset(ctx, interaction, guild_id, options).await?;
+                reset(ctx, interaction, channel, everyone_role).await?;
             }
             _ => unreachable!("Invalid subcommand name"),
         };
