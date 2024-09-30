@@ -1,11 +1,11 @@
-use serenity::all::{ChannelId, Context, VoiceState};
+use serenity::all::{ChannelId, Context};
 
-use crate::{Result, VoiceStateCache};
+use crate::{CachedState, Result, VoiceStateCache};
 
 const CATEGORY_ID: ChannelId = ChannelId::new(923679215205892098);
 const CREATOR_CHANNEL_ID: ChannelId = ChannelId::new(1289436847688253550);
 
-pub async fn channel_deleter(ctx: &Context, old: Option<&VoiceState>) -> Result<()> {
+pub async fn channel_deleter(ctx: &Context, old: Option<CachedState>) -> Result<()> {
     let old = match old {
         Some(old) => old,
         None => return Ok(()),

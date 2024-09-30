@@ -15,13 +15,13 @@ pub use error::Error;
 use error::Result;
 pub use voice_channel_manager::VoiceChannelManager;
 
-pub struct State {
+pub struct CachedState {
     pub channel_id: Option<ChannelId>,
     pub guild_id: Option<GuildId>,
     pub user: User,
 }
 
-impl State {
+impl CachedState {
     async fn from_voice_state(ctx: &Context, state: VoiceState) -> Result<Self> {
         let user = if let Some(member) = state.member {
             member.user
@@ -40,7 +40,7 @@ impl State {
 pub struct VoiceStateCache;
 
 impl VoiceStateCache {
-    pub async fn update(ctx: &Context, new: VoiceState) -> Result<Option<State>> {
+    pub async fn update(ctx: &Context, new: VoiceState) -> Result<Option<CachedState>> {
         let new = new.clone();
         let mut data = ctx.data.write().await;
         let cache = data
@@ -50,7 +50,7 @@ impl VoiceStateCache {
         let old = if new.channel_id.is_none() {
             cache.remove(&new.user_id)
         } else {
-            cache.insert(new.user_id, State::from_voice_state(ctx, new).await?)
+            cache.insert(new.user_id, CachedState::from_voice_state(ctx, new).await?)
         };
 
         Ok(old)
@@ -58,7 +58,7 @@ impl VoiceStateCache {
 }
 
 impl TypeMapKey for VoiceStateCache {
-    type Value = HashMap<UserId, State>;
+    type Value = HashMap<UserId, CachedState>;
 }
 
 pub async fn get_voice_state(
