@@ -1,6 +1,5 @@
 use serenity::all::{
-    CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
-    GuildId, ResolvedOption, ResolvedValue,
+    CommandInteraction, Context, EditInteractionResponse, GuildId, ResolvedOption, ResolvedValue,
 };
 use zayden_core::parse_options;
 
@@ -22,13 +21,9 @@ pub async fn kick(
     guild_id.disconnect_member(ctx, user).await?;
 
     interaction
-        .create_response(
+        .edit_response(
             ctx,
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content("User kicked from channel.")
-                    .ephemeral(true),
-            ),
+            EditInteractionResponse::new().content("User kicked from channel."),
         )
         .await?;
 

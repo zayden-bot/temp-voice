@@ -1,6 +1,6 @@
 use serenity::all::{
-    CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
-    EditChannel, GuildChannel, ResolvedOption, ResolvedValue,
+    CommandInteraction, Context, EditChannel, EditInteractionResponse, GuildChannel,
+    ResolvedOption, ResolvedValue,
 };
 use zayden_core::parse_options;
 
@@ -22,13 +22,9 @@ pub async fn name(
     channel.edit(ctx, EditChannel::new().name(name)).await?;
 
     interaction
-        .create_response(
+        .edit_response(
             ctx,
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content("Channel name updated.")
-                    .ephemeral(true),
-            ),
+            EditInteractionResponse::new().content("Channel name updated."),
         )
         .await?;
 

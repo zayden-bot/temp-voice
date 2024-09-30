@@ -1,7 +1,4 @@
-use serenity::all::{
-    CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
-    GuildChannel,
-};
+use serenity::all::{CommandInteraction, Context, EditInteractionResponse, GuildChannel};
 
 use crate::Error;
 
@@ -13,13 +10,9 @@ pub async fn delete(
     channel.delete(ctx).await?;
 
     interaction
-        .create_response(
+        .edit_response(
             ctx,
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content("Channel deleted.")
-                    .ephemeral(true),
-            ),
+            EditInteractionResponse::new().content("Channel deleted."),
         )
         .await?;
 

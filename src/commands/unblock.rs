@@ -1,6 +1,6 @@
 use serenity::all::{
-    CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
-    GuildChannel, PermissionOverwriteType, ResolvedOption, ResolvedValue,
+    CommandInteraction, Context, EditInteractionResponse, GuildChannel, PermissionOverwriteType,
+    ResolvedOption, ResolvedValue,
 };
 use zayden_core::parse_options;
 
@@ -24,13 +24,9 @@ pub async fn unblock(
         .await?;
 
     interaction
-        .create_response(
+        .edit_response(
             ctx,
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content("Removed user from blocked.")
-                    .ephemeral(true),
-            ),
+            EditInteractionResponse::new().content("Removed user from blocked."),
         )
         .await?;
 

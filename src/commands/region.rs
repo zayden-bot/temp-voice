@@ -1,6 +1,6 @@
 use serenity::all::{
-    CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
-    EditChannel, GuildChannel, ResolvedOption, ResolvedValue,
+    CommandInteraction, Context, EditChannel, EditInteractionResponse, GuildChannel,
+    ResolvedOption, ResolvedValue,
 };
 use zayden_core::parse_options;
 
@@ -24,13 +24,9 @@ pub async fn region(
         .await?;
 
     interaction
-        .create_response(
+        .edit_response(
             ctx,
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content("Channel region updated.")
-                    .ephemeral(true),
-            ),
+            EditInteractionResponse::new().content("Channel region updated."),
         )
         .await?;
 

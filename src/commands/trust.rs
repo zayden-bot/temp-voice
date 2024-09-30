@@ -1,7 +1,7 @@
+use serenity::all::EditInteractionResponse;
 use serenity::all::{
-    CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
-    GuildChannel, PermissionOverwrite, PermissionOverwriteType, Permissions, ResolvedOption,
-    ResolvedValue,
+    CommandInteraction, Context, GuildChannel, PermissionOverwrite, PermissionOverwriteType,
+    Permissions, ResolvedOption, ResolvedValue,
 };
 use zayden_core::parse_options;
 
@@ -47,13 +47,9 @@ pub async fn trust(
         .await?;
 
     interaction
-        .create_response(
+        .edit_response(
             ctx,
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content("Set user to trusted.")
-                    .ephemeral(true),
-            ),
+            EditInteractionResponse::new().content("Set user to trusted."),
         )
         .await?;
 

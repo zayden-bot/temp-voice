@@ -1,7 +1,6 @@
 use serenity::all::{
-    CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
-    GuildChannel, PermissionOverwrite, PermissionOverwriteType, Permissions, ResolvedOption,
-    ResolvedValue, RoleId,
+    CommandInteraction, Context, EditInteractionResponse, GuildChannel, PermissionOverwrite,
+    PermissionOverwriteType, Permissions, ResolvedOption, ResolvedValue, RoleId,
 };
 use zayden_core::parse_options;
 
@@ -48,13 +47,9 @@ pub async fn privacy(
     channel.create_permission(ctx, perm).await?;
 
     interaction
-        .create_response(
+        .edit_response(
             ctx,
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content("Channel privacy updated.")
-                    .ephemeral(true),
-            ),
+            EditInteractionResponse::new().content("Channel privacy updated."),
         )
         .await?;
 

@@ -1,7 +1,6 @@
 use serenity::all::{
-    CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
-    GuildChannel, GuildId, PermissionOverwrite, PermissionOverwriteType, Permissions,
-    ResolvedOption, ResolvedValue,
+    CommandInteraction, Context, EditInteractionResponse, GuildChannel, GuildId,
+    PermissionOverwrite, PermissionOverwriteType, Permissions, ResolvedOption, ResolvedValue,
 };
 use zayden_core::parse_options;
 
@@ -46,13 +45,9 @@ pub async fn block(
     guild_id.disconnect_member(ctx, user.id).await?;
 
     interaction
-        .create_response(
+        .edit_response(
             ctx,
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content("Set user to blocked.")
-                    .ephemeral(true),
-            ),
+            EditInteractionResponse::new().content("Set user to blocked."),
         )
         .await?;
 

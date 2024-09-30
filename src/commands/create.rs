@@ -1,9 +1,9 @@
 use std::time::Duration;
 
+use serenity::all::EditInteractionResponse;
 use serenity::all::{
-    ChannelId, ChannelType, Context, CreateChannel, CreateInteractionResponse,
-    CreateInteractionResponseMessage, GuildId, PermissionOverwrite, PermissionOverwriteType,
-    Permissions, ResolvedOption, ResolvedValue,
+    ChannelId, ChannelType, Context, CreateChannel, GuildId, PermissionOverwrite,
+    PermissionOverwriteType, Permissions, ResolvedOption, ResolvedValue,
 };
 use zayden_core::parse_options;
 
@@ -82,13 +82,9 @@ pub async fn create(
     };
 
     interaction
-        .create_response(
+        .edit_response(
             ctx,
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .ephemeral(true)
-                    .content(response_content),
-            ),
+            EditInteractionResponse::new().content(response_content),
         )
         .await?;
 
