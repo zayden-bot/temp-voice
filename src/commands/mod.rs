@@ -203,11 +203,14 @@ impl VoiceCommand {
                     "limit",
                     "Change the user limit of the voice channel.",
                 )
-                .add_sub_option(CreateCommandOption::new(
-                    CommandOptionType::Integer,
-                    "user_limit",
-                    "The new user limit of the voice channel (0-99).",
-                )),
+                .add_sub_option(
+                    CreateCommandOption::new(
+                        CommandOptionType::Integer,
+                        "user_limit",
+                        "The new user limit of the voice channel (0-99).",
+                    )
+                    .required(true),
+                ),
             )
             .add_option(
                 CreateCommandOption::new(
@@ -224,7 +227,8 @@ impl VoiceCommand {
                     .add_string_choice("Lock", "lock")
                     .add_string_choice("Unlock", "unlock")
                     .add_string_choice("Invisible", "invisible")
-                    .add_string_choice("Visible", "visible"),
+                    .add_string_choice("Visible", "visible")
+                    .required(true),
                 ),
             )
             // .add_option(CreateCommandOption::new(
@@ -258,21 +262,21 @@ impl VoiceCommand {
                     .required(true),
                 ),
             )
-            // .add_option(
-            //     CreateCommandOption::new(
-            //         CommandOptionType::SubCommand,
-            //         "invite",
-            //         "Invite a user to the voice channel.",
-            //     )
-            //     .add_sub_option(
-            //         CreateCommandOption::new(
-            //             CommandOptionType::User,
-            //             "user",
-            //             "The user to invite.",
-            //         )
-            //         .required(true),
-            //     ),
-            // )
+            .add_option(
+                CreateCommandOption::new(
+                    CommandOptionType::SubCommand,
+                    "invite",
+                    "Invite a user to the voice channel.",
+                )
+                .add_sub_option(
+                    CreateCommandOption::new(
+                        CommandOptionType::User,
+                        "user",
+                        "The user to invite.",
+                    )
+                    .required(true),
+                ),
+            )
             .add_option(
                 CreateCommandOption::new(
                     CommandOptionType::SubCommand,
@@ -308,7 +312,8 @@ impl VoiceCommand {
                     .add_string_choice("US Central", "us-central")
                     .add_string_choice("US East", "us-east")
                     .add_string_choice("US South", "us-south")
-                    .add_string_choice("US West", "us-west"),
+                    .add_string_choice("US West", "us-west")
+                    .required(true),
                 ),
             )
             .add_option(
@@ -337,26 +342,26 @@ impl VoiceCommand {
                     .required(true),
                 ),
             )
-            // .add_option(CreateCommandOption::new(
-            //     CommandOptionType::SubCommand,
-            //     "claim",
-            //     "Claim the voice channel as your own.",
-            // ))
-            // .add_option(
-            //     CreateCommandOption::new(
-            //         CommandOptionType::SubCommand,
-            //         "transfer",
-            //         "Transfer ownership of the voice channel.",
-            //     )
-            //     .add_sub_option(
-            //         CreateCommandOption::new(
-            //             CommandOptionType::User,
-            //             "user",
-            //             "The user to transfer ownership to.",
-            //         )
-            //         .required(true),
-            //     ),
-            // )
+            .add_option(CreateCommandOption::new(
+                CommandOptionType::SubCommand,
+                "claim",
+                "Claim the voice channel as your own.",
+            ))
+            .add_option(
+                CreateCommandOption::new(
+                    CommandOptionType::SubCommand,
+                    "transfer",
+                    "Transfer ownership of the voice channel.",
+                )
+                .add_sub_option(
+                    CreateCommandOption::new(
+                        CommandOptionType::User,
+                        "user",
+                        "The user to transfer ownership to.",
+                    )
+                    .required(true),
+                ),
+            )
             .add_option(CreateCommandOption::new(
                 CommandOptionType::SubCommand,
                 "delete",
@@ -377,53 +382,53 @@ impl VoiceCommand {
                     .required(true),
                 ),
             )
-        // .add_option(CreateCommandOption::new(
-        //     CommandOptionType::SubCommand,
-        //     "info",
-        //     "Get information about the voice channel.",
-        // ))
-        // .add_option(
-        //     CreateCommandOption::new(
-        //         CommandOptionType::SubCommand,
-        //         "password",
-        //         "Set a password for the voice channel.",
-        //     )
-        //     .add_sub_option(
-        //         CreateCommandOption::new(
-        //             CommandOptionType::String,
-        //             "password",
-        //             "The password for the voice channel.",
-        //         )
-        //         .required(true),
-        //     ),
-        // )
-        // .add_option(
-        //     CreateCommandOption::new(
-        //         CommandOptionType::SubCommand,
-        //         "join",
-        //         "Join a password protected voice channel.",
-        //     )
-        //     .add_sub_option(
-        //         CreateCommandOption::new(
-        //             CommandOptionType::Channel,
-        //             "channel",
-        //             "The voice channel to join.",
-        //         )
-        //         .required(true)
-        //         .add_sub_option(
-        //             CreateCommandOption::new(
-        //                 CommandOptionType::String,
-        //                 "password",
-        //                 "The password for the voice channel.",
-        //             )
-        //             .required(true),
-        //         ),
-        //     ),
-        // )
-        // .add_option(CreateCommandOption::new(
-        //     CommandOptionType::SubCommand,
-        //     "reset",
-        //     "Reset the voice channel to default settings.",
-        // ))
+            // .add_option(CreateCommandOption::new(
+            //     CommandOptionType::SubCommand,
+            //     "info",
+            //     "Get information about the voice channel.",
+            // ))
+            .add_option(
+                CreateCommandOption::new(
+                    CommandOptionType::SubCommand,
+                    "password",
+                    "Set a password for the voice channel.",
+                )
+                .add_sub_option(
+                    CreateCommandOption::new(
+                        CommandOptionType::String,
+                        "password",
+                        "The password for the voice channel.",
+                    )
+                    .required(true),
+                ),
+            )
+            .add_option(
+                CreateCommandOption::new(
+                    CommandOptionType::SubCommand,
+                    "join",
+                    "Join a password protected voice channel.",
+                )
+                .add_sub_option(
+                    CreateCommandOption::new(
+                        CommandOptionType::Channel,
+                        "channel",
+                        "The voice channel to join.",
+                    )
+                    .required(true)
+                    .add_sub_option(
+                        CreateCommandOption::new(
+                            CommandOptionType::String,
+                            "password",
+                            "The password for the voice channel.",
+                        )
+                        .required(true),
+                    ),
+                ),
+            )
+            .add_option(CreateCommandOption::new(
+                CommandOptionType::SubCommand,
+                "reset",
+                "Reset the voice channel to default settings.",
+            ))
     }
 }
