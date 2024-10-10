@@ -1,4 +1,4 @@
-use serenity::all::{ChannelId, Context};
+use serenity::all::{ChannelId, Context, DiscordJsonError, ErrorResponse, HttpError};
 
 use crate::{CachedState, Result, VoiceStateCache};
 
@@ -41,7 +41,16 @@ pub async fn channel_deleter(ctx: &Context, old: Option<CachedState>) -> Result<
     };
 
     if users == 0 {
-        channel_id.delete(ctx).await?;
+        match channel_id.delete(ctx).await {
+            Ok(_) => {}
+            Err(serenity::Error::Http(HttpError::UnsuccessfulRequest(ErrorResponse {
+                error: DiscordJsonError { code: 10003, .. },
+                ..
+            }))) => {
+                // Channel already deleted, ignore this error
+            }
+            Err(e) => return Err(e.into()),
+        };
     }
 
     Ok(())
