@@ -26,7 +26,7 @@ pub async fn limit(
     interaction
         .edit_response(
             ctx,
-            EditInteractionResponse::new().content("Channel user limit updated."),
+            EditInteractionResponse::new().content(format!("User limit set to {}", limit)),
         )
         .await?;
 
