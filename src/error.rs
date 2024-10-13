@@ -38,7 +38,10 @@ impl ErrorResponse for Error {
             Error::MissingPermissions(PermissionError::NotTrusted) => {
                 String::from("You must be trusted to use this command.")
             }
-            Error::ChannelNotFound(id) => format!("Channel not found: {}", id.mention()),
+            Error::ChannelNotFound(id) => format!(
+                "Channel not found: {}\nTry using `/voice claim` to claim the channel.",
+                id.mention()
+            ),
             _ => String::new(),
         }
     }
