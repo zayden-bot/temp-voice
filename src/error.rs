@@ -1,3 +1,4 @@
+use serenity::all::{ChannelId, Mentionable};
 use zayden_core::ErrorResponse;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
@@ -15,6 +16,7 @@ pub enum Error {
     OwnerInChannel,
     InvalidPassword,
     MissingPermissions(PermissionError),
+    ChannelNotFound(ChannelId),
 
     Serenity(serenity::Error),
 }
@@ -36,6 +38,7 @@ impl ErrorResponse for Error {
             Error::MissingPermissions(PermissionError::NotTrusted) => {
                 String::from("You must be trusted to use this command.")
             }
+            Error::ChannelNotFound(id) => format!("Channel not found: {}", id.mention()),
             _ => String::new(),
         }
     }
