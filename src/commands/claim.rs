@@ -1,9 +1,10 @@
-use serenity::all::{ChannelId, EditInteractionResponse};
+use serenity::all::{ChannelId, EditInteractionResponse, UserId};
 use serenity::all::{
     CommandInteraction, Context, GuildChannel, PermissionOverwrite, PermissionOverwriteType,
     Permissions,
 };
 
+use crate::voice_channel_manager::VoiceChannelData;
 use crate::Error;
 use crate::VoiceChannelManager;
 use crate::VoiceStateCache;
@@ -13,13 +14,19 @@ pub async fn claim(
     interaction: &CommandInteraction,
     channel: GuildChannel,
 ) -> Result<(), Error> {
-    if is_claimable(ctx, channel.id).await {
-        return Err(Error::OwnerInChannel);
-    }
+    match VoiceChannelManager::take(ctx, channel.id).await {
+        Ok(mut channel_data) => {
+            if is_claimable(ctx, channel_data.owner, channel.id).await {
+                return Err(Error::OwnerInChannel);
+            }
 
-    let mut channel_data = VoiceChannelManager::take(ctx, channel.id).await?;
-    channel_data.owner = interaction.user.id;
-    channel_data.save(ctx).await;
+            channel_data.owner = interaction.user.id;
+            channel_data.save(ctx).await;
+        }
+        Err(_) => {
+            VoiceChannelData::new(channel.id, interaction.user.id);
+        }
+    };
 
     channel
         .create_permission(
@@ -42,18 +49,8 @@ pub async fn claim(
     Ok(())
 }
 
-async fn is_claimable(ctx: &Context, channel_id: ChannelId) -> bool {
+async fn is_claimable(ctx: &Context, owner: UserId, channel_id: ChannelId) -> bool {
     let data = ctx.data.read().await;
-
-    let owner = {
-        let manager = data
-            .get::<VoiceChannelManager>()
-            .expect("Expected VoiceChannelManager in TypeMap");
-        let channel_data = manager
-            .get(&channel_id)
-            .expect("Expected channel in manager");
-        channel_data.owner
-    };
 
     let owner_state = {
         let cache = data
