@@ -16,7 +16,18 @@ pub async fn channel_deleter(ctx: &Context, old: Option<CachedState>) -> Result<
         _ => return Ok(()),
     };
 
-    let channel = channel_id.to_channel(ctx).await?;
+    let channel = match channel_id.to_channel(ctx).await {
+        Ok(channel) => channel,
+        Err(serenity::Error::Http(HttpError::UnsuccessfulRequest(ErrorResponse {
+            error: DiscordJsonError { code: 10003, .. },
+            ..
+        }))) => {
+            // Channel already deleted, ignore this error
+            let _ = VoiceChannelManager::take(ctx, channel_id).await;
+            return Ok(());
+        }
+        Err(e) => return Err(e.into()),
+    };
 
     if channel
         .guild()
