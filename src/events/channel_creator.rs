@@ -3,7 +3,7 @@ use serenity::all::{
     Permissions, VoiceState,
 };
 
-use crate::Result;
+use crate::{Result, VoiceChannelManager};
 
 const CHANNEL_ID: ChannelId = ChannelId::new(1289436847688253550);
 
@@ -13,16 +13,15 @@ pub async fn channel_creator(ctx: &Context, new: &VoiceState) -> Result<()> {
         _ => return Ok(()),
     };
 
-    let guild_id = match new.guild_id {
-        Some(guild_id) => guild_id,
-        None => return Ok(()),
-    };
+    let guild_id = new
+        .guild_id
+        .expect("Should be in a guild as voice channels are guild only");
 
     let creator_category = creator_channel_id
         .to_channel(ctx)
         .await?
         .guild()
-        .expect("Should be in a category")
+        .expect("Should be in a guild")
         .parent_id
         .expect("Should be in a category");
 
@@ -40,6 +39,7 @@ pub async fn channel_creator(ctx: &Context, new: &VoiceState) -> Result<()> {
         .permissions(perms);
 
     let vc = guild_id.create_channel(ctx, vc_builder).await?;
+    VoiceChannelManager::register_voice_channel(ctx, vc.id, new.user_id).await;
 
     guild_id.move_member(ctx, member.user.id, vc.id).await?;
 

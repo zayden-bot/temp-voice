@@ -8,6 +8,11 @@ use crate::{Error, Result};
 pub struct VoiceChannelManager;
 
 impl VoiceChannelManager {
+    pub async fn register_voice_channel(ctx: &Context, channel_id: ChannelId, owner_id: UserId) {
+        let channel_data = VoiceChannelData::new(channel_id, owner_id);
+        channel_data.save(ctx).await;
+    }
+
     pub async fn take(ctx: &Context, channel_id: ChannelId) -> Result<VoiceChannelData> {
         let mut data = ctx.data.write().await;
         let manager = data

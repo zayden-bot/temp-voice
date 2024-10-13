@@ -7,7 +7,7 @@ use serenity::all::{
 };
 use zayden_core::parse_options;
 
-use crate::Error;
+use crate::{Error, VoiceChannelManager};
 
 use crate::get_voice_state;
 
@@ -73,6 +73,7 @@ pub async fn create(
         .permissions(perms);
 
     let vc = guild_id.create_channel(ctx, vc_builder).await?;
+    VoiceChannelManager::register_voice_channel(ctx, vc.id, interaction.user.id).await;
 
     let move_result = guild_id.move_member(ctx, interaction.user.id, vc.id).await;
 

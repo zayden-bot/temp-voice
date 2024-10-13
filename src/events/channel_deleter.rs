@@ -1,6 +1,6 @@
 use serenity::all::{ChannelId, Context, DiscordJsonError, ErrorResponse, HttpError};
 
-use crate::{CachedState, Result, VoiceStateCache};
+use crate::{CachedState, Result, VoiceChannelManager, VoiceStateCache};
 
 const CATEGORY_ID: ChannelId = ChannelId::new(923679215205892098);
 const CREATOR_CHANNEL_ID: ChannelId = ChannelId::new(1289436847688253550);
@@ -51,6 +51,8 @@ pub async fn channel_deleter(ctx: &Context, old: Option<CachedState>) -> Result<
             }
             Err(e) => return Err(e.into()),
         };
+
+        let _ = VoiceChannelManager::take(ctx, channel_id).await;
     }
 
     Ok(())
