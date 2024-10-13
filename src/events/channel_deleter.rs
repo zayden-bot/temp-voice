@@ -16,6 +16,8 @@ pub async fn channel_deleter(ctx: &Context, old: Option<CachedState>) -> Result<
         _ => return Ok(()),
     };
 
+    let _ = VoiceChannelManager::take(ctx, channel_id).await;
+
     let channel = match channel_id.to_channel(ctx).await {
         Ok(channel) => channel,
         Err(serenity::Error::Http(HttpError::UnsuccessfulRequest(ErrorResponse {
@@ -23,7 +25,6 @@ pub async fn channel_deleter(ctx: &Context, old: Option<CachedState>) -> Result<
             ..
         }))) => {
             // Channel already deleted, ignore this error
-            let _ = VoiceChannelManager::take(ctx, channel_id).await;
             return Ok(());
         }
         Err(e) => return Err(e.into()),
@@ -62,8 +63,6 @@ pub async fn channel_deleter(ctx: &Context, old: Option<CachedState>) -> Result<
             }
             Err(e) => return Err(e.into()),
         };
-
-        let _ = VoiceChannelManager::take(ctx, channel_id).await;
     }
 
     Ok(())
