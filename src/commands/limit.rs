@@ -14,7 +14,7 @@ pub async fn limit(
 ) -> Result<(), Error> {
     let options = parse_options(options);
 
-    let limit = match options.get("limit") {
+    let limit = match options.get("user_limit") {
         Some(ResolvedValue::Integer(limit)) => (*limit).clamp(0, 99) as u32,
         _ => 0,
     };
