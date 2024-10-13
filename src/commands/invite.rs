@@ -21,16 +21,9 @@ pub async fn invite(
         _ => unreachable!("User option is required"),
     };
 
-    {
-        let mut data = ctx.data.write().await;
-        let manager = data
-            .get_mut::<VoiceChannelManager>()
-            .expect("Expected VoiceChannelManager in TypeMap");
-        let channel_data = manager
-            .get_mut(&channel.id)
-            .expect("Expected channel in manager");
-        channel_data.create_invite(user.id);
-    }
+    let mut channel_data = VoiceChannelManager::take(ctx, channel.id).await?;
+    channel_data.create_invite(user.id);
+    channel_data.save(ctx).await;
 
     channel
         .create_permission(
@@ -53,7 +46,7 @@ pub async fn invite(
 
     let content = match result {
         Ok(_) => "Sent invite to user.",
-        Err(_) => "Failed to direct message user.",
+        Err(_) => "Invited user, but failed to send DM.",
     };
 
     interaction

@@ -17,16 +17,9 @@ pub async fn claim(
         return Err(Error::OwnerInChannel);
     }
 
-    {
-        let mut data = ctx.data.write().await;
-        let manager = data
-            .get_mut::<VoiceChannelManager>()
-            .expect("Expected VoiceChannelManager in TypeMap");
-        let channel_data = manager
-            .get_mut(&channel.id)
-            .expect("Expected channel in manager");
-        channel_data.owner = interaction.user.id;
-    }
+    let mut channel_data = VoiceChannelManager::take(ctx, channel.id).await?;
+    channel_data.owner = interaction.user.id;
+    channel_data.save(ctx).await;
 
     channel
         .create_permission(
@@ -50,7 +43,7 @@ pub async fn claim(
 }
 
 async fn is_claimable(ctx: &Context, channel_id: ChannelId) -> bool {
-    let data = ctx.data.write().await;
+    let data = ctx.data.read().await;
 
     let owner = {
         let manager = data

@@ -39,16 +39,9 @@ pub async fn password(
         _ => unreachable!("Password option is required"),
     };
 
-    {
-        let mut data = ctx.data.write().await;
-        let manager = data
-            .get_mut::<VoiceChannelManager>()
-            .expect("Expected VoiceChannelManager in TypeMap");
-        let channel_data = manager
-            .get_mut(&channel.id)
-            .expect("Expected channel in manager");
-        channel_data.password = Some(pass.to_string());
-    }
+    let mut channel_data = VoiceChannelManager::take(ctx, channel.id).await?;
+    channel_data.password = Some(pass.to_string());
+    channel_data.save(ctx).await;
 
     let perms = vec![
         PermissionOverwrite {

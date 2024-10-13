@@ -1,17 +1,32 @@
 use std::collections::{HashMap, HashSet};
 
-use serenity::{
-    all::{ChannelId, UserId},
-    prelude::TypeMapKey,
-};
+use serenity::all::{ChannelId, Context, UserId};
+use serenity::prelude::TypeMapKey;
+
+use crate::{Error, Result};
 
 pub struct VoiceChannelManager;
+
+impl VoiceChannelManager {
+    pub async fn take(ctx: &Context, channel_id: ChannelId) -> Result<VoiceChannelData> {
+        let mut data = ctx.data.write().await;
+        let manager = data
+            .get_mut::<Self>()
+            .expect("Expected VoiceChannelManager in TypeMap");
+
+        match manager.remove(&channel_id) {
+            Some(channel_data) => Ok(channel_data),
+            None => Err(Error::ChannelNotFound(channel_id)),
+        }
+    }
+}
 
 impl TypeMapKey for VoiceChannelManager {
     type Value = HashMap<ChannelId, VoiceChannelData>;
 }
 
 pub struct VoiceChannelData {
+    channel_id: ChannelId,
     pub owner: UserId,
     trusted: HashSet<UserId>,
     open_invites: HashSet<UserId>,
@@ -19,8 +34,9 @@ pub struct VoiceChannelData {
 }
 
 impl VoiceChannelData {
-    pub fn new(owner: impl Into<UserId>) -> Self {
+    pub fn new(channel_id: ChannelId, owner: impl Into<UserId>) -> Self {
         Self {
+            channel_id,
             owner: owner.into(),
             trusted: HashSet::new(),
             open_invites: HashSet::new(),
@@ -28,11 +44,11 @@ impl VoiceChannelData {
         }
     }
 
-    pub fn add_trusted(&mut self, id: impl Into<UserId>) {
+    pub fn trust(&mut self, id: impl Into<UserId>) {
         self.trusted.insert(id.into());
     }
 
-    pub fn remove_trusted(&mut self, id: impl Into<UserId>) {
+    pub fn untrust(&mut self, id: impl Into<UserId>) {
         self.trusted.remove(&id.into());
     }
 
@@ -49,5 +65,13 @@ impl VoiceChannelData {
         self.trusted.clear();
         self.open_invites.clear();
         self.password = None;
+    }
+
+    pub async fn save(self, ctx: &Context) {
+        let mut data = ctx.data.write().await;
+        let manager = data
+            .get_mut::<VoiceChannelManager>()
+            .expect("Expected VoiceChannelManager in TypeMap");
+        manager.insert(self.channel_id, self);
     }
 }

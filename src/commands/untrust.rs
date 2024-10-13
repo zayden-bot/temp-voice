@@ -19,16 +19,9 @@ pub async fn untrust(
         _ => unreachable!("User option is required"),
     };
 
-    {
-        let mut data = ctx.data.write().await;
-        let manager = data
-            .get_mut::<VoiceChannelManager>()
-            .expect("Expected VoiceChannelManager in TypeMap");
-        let channel_data = manager
-            .get_mut(&channel.id)
-            .expect("Expected channel in manager");
-        channel_data.remove_trusted(user.id);
-    }
+    let mut channel_data = VoiceChannelManager::take(ctx, channel.id).await?;
+    channel_data.untrust(user.id);
+    channel_data.save(ctx).await;
 
     channel
         .delete_permission(ctx, PermissionOverwriteType::Member(user.id))

@@ -38,16 +38,9 @@ pub async fn transfer(
         _ => unreachable!("User option is required"),
     };
 
-    {
-        let mut data = ctx.data.write().await;
-        let manager = data
-            .get_mut::<VoiceChannelManager>()
-            .expect("Expected VoiceChannelManager in TypeMap");
-        let channel_data = manager
-            .get_mut(&channel.id)
-            .expect("Expected channel in manager");
-        channel_data.owner = user.id;
-    }
+    let mut channel_data = VoiceChannelManager::take(ctx, channel.id).await?;
+    channel_data.owner = user.id;
+    channel_data.save(ctx).await;
 
     channel
         .create_permission(

@@ -29,16 +29,9 @@ pub async fn reset(
         return Err(Error::MissingPermissions(PermissionError::NotOwner));
     }
 
-    {
-        let mut data = ctx.data.write().await;
-        let manager = data
-            .get_mut::<VoiceChannelManager>()
-            .expect("Expected VoiceChannelManager in TypeMap");
-        let channel_data = manager
-            .get_mut(&channel.id)
-            .expect("Expected channel in manager");
-        channel_data.reset()
-    }
+    let mut channel_data = VoiceChannelManager::take(ctx, channel.id).await?;
+    channel_data.reset();
+    channel_data.save(ctx).await;
 
     let everyone_permissions = channel
         .permission_overwrites
