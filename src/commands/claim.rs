@@ -13,19 +13,19 @@ pub async fn claim(
     interaction: &CommandInteraction,
     channel_id: ChannelId,
 ) -> Result<(), Error> {
-    match VoiceChannelManager::take(ctx, channel_id).await {
+    let channel_data = match VoiceChannelManager::take(ctx, channel_id).await {
         Ok(mut channel_data) => {
             if is_claimable(ctx, channel_data.owner, channel_id).await {
                 return Err(Error::OwnerInChannel);
             }
 
             channel_data.owner = interaction.user.id;
-            channel_data.save(ctx).await;
+            channel_data
         }
-        Err(_) => {
-            VoiceChannelData::new(channel_id, interaction.user.id);
-        }
+        Err(_) => VoiceChannelData::new(channel_id, interaction.user.id),
     };
+
+    channel_data.save(ctx).await;
 
     channel_id
         .create_permission(
