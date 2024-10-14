@@ -56,7 +56,7 @@ impl VoiceChannelManager {
             None => return Err(Error::ChannelNotFound(channel_id)),
         };
 
-        Ok(channel_data.trusted.contains(&user_id))
+        Ok(channel_data.owner == user_id || channel_data.trusted.contains(&user_id))
     }
 
     pub async fn verify_password(ctx: &Context, channel_id: ChannelId, pass: &str) -> Result<bool> {
