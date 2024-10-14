@@ -64,6 +64,22 @@ impl VoiceCommand {
             .channel_id
             .ok_or(Error::MemberNotInVoiceChannel)?;
 
+        match command.name {
+            "create" => {
+                create(ctx, interaction, guild_id, options).await?;
+                return Ok(());
+            }
+            "join" => {
+                join(ctx, interaction, options, guild_id).await?;
+                return Ok(());
+            }
+            "claim" => {
+                claim(ctx, interaction, channel_id).await?;
+                return Ok(());
+            }
+            _ => {}
+        }
+
         let is_owner =
             VoiceChannelManager::verify_owner(ctx, channel_id, interaction.user.id).await?;
         let is_trusted = is_owner
@@ -72,15 +88,6 @@ impl VoiceCommand {
         let everyone_role = guild_id.everyone_role();
 
         match command.name {
-            "create" => {
-                create(ctx, interaction, guild_id, options).await?;
-            }
-            "join" => {
-                join(ctx, interaction, options, guild_id).await?;
-            }
-            "claim" => {
-                claim(ctx, interaction, channel_id).await?;
-            }
             "name" => {
                 if !is_trusted {
                     return Err(Error::MissingPermissions(PermissionError::NotTrusted));
