@@ -1,5 +1,5 @@
 use serenity::all::{
-    CommandInteraction, Context, EditInteractionResponse, GuildChannel, PermissionOverwrite,
+    ChannelId, CommandInteraction, Context, EditInteractionResponse, PermissionOverwrite,
     PermissionOverwriteType, Permissions, ResolvedOption, ResolvedValue,
 };
 use serenity::all::{CreateMessage, Mentionable};
@@ -12,7 +12,7 @@ pub async fn invite(
     ctx: &Context,
     interaction: &CommandInteraction,
     options: &Vec<ResolvedOption<'_>>,
-    channel: GuildChannel,
+    channel_id: ChannelId,
 ) -> Result<(), Error> {
     let options = parse_options(options);
 
@@ -21,11 +21,11 @@ pub async fn invite(
         _ => unreachable!("User option is required"),
     };
 
-    let mut channel_data = VoiceChannelManager::take(ctx, channel.id).await?;
+    let mut channel_data = VoiceChannelManager::take(ctx, channel_id).await?;
     channel_data.create_invite(user.id);
     channel_data.save(ctx).await;
 
-    channel
+    channel_id
         .create_permission(
             ctx,
             PermissionOverwrite {
@@ -39,8 +39,10 @@ pub async fn invite(
     let result = user
         .direct_message(
             ctx,
-            CreateMessage::new()
-                .content(format!("You have been invited to {}.", channel.mention())),
+            CreateMessage::new().content(format!(
+                "You have been invited to {}.",
+                channel_id.mention()
+            )),
         )
         .await;
 

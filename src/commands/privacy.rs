@@ -1,5 +1,5 @@
 use serenity::all::{
-    CommandInteraction, Context, EditInteractionResponse, GuildChannel, PermissionOverwrite,
+    ChannelId, CommandInteraction, Context, EditInteractionResponse, PermissionOverwrite,
     PermissionOverwriteType, Permissions, ResolvedOption, ResolvedValue, RoleId,
 };
 use zayden_core::parse_options;
@@ -11,7 +11,7 @@ pub async fn privacy(
     interaction: &CommandInteraction,
     options: &Vec<ResolvedOption<'_>>,
     everyone_role: RoleId,
-    channel: GuildChannel,
+    channel_id: ChannelId,
 ) -> Result<(), Error> {
     let options = parse_options(options);
 
@@ -44,7 +44,7 @@ pub async fn privacy(
         _ => unreachable!("Invalid privacy option"),
     };
 
-    channel.create_permission(ctx, perm).await?;
+    channel_id.create_permission(ctx, perm).await?;
 
     interaction
         .edit_response(

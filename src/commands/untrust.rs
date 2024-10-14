@@ -1,5 +1,5 @@
 use serenity::all::{
-    CommandInteraction, Context, EditInteractionResponse, GuildChannel, PermissionOverwriteType,
+    ChannelId, CommandInteraction, Context, EditInteractionResponse, PermissionOverwriteType,
     ResolvedOption, ResolvedValue,
 };
 use zayden_core::parse_options;
@@ -10,7 +10,7 @@ pub async fn untrust(
     ctx: &Context,
     interaction: &CommandInteraction,
     options: &Vec<ResolvedOption<'_>>,
-    channel: GuildChannel,
+    channel_id: ChannelId,
 ) -> Result<(), Error> {
     let options = parse_options(options);
 
@@ -19,11 +19,11 @@ pub async fn untrust(
         _ => unreachable!("User option is required"),
     };
 
-    let mut channel_data = VoiceChannelManager::take(ctx, channel.id).await?;
+    let mut channel_data = VoiceChannelManager::take(ctx, channel_id).await?;
     channel_data.untrust(user.id);
     channel_data.save(ctx).await;
 
-    channel
+    channel_id
         .delete_permission(ctx, PermissionOverwriteType::Member(user.id))
         .await?;
 

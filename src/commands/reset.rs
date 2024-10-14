@@ -1,7 +1,5 @@
-use serenity::all::EditInteractionResponse;
-use serenity::all::{
-    CommandInteraction, Context, EditChannel, GuildChannel, PermissionOverwriteType, RoleId,
-};
+use serenity::all::{ChannelId, EditInteractionResponse, GuildId};
+use serenity::all::{CommandInteraction, Context, EditChannel, PermissionOverwriteType};
 
 use crate::error::PermissionError;
 use crate::VoiceChannelManager;
@@ -10,26 +8,32 @@ use crate::{Error, Result};
 pub async fn reset(
     ctx: &Context,
     interaction: &CommandInteraction,
-    mut channel: GuildChannel,
-    everyone_role: RoleId,
+    guild_id: GuildId,
+    channel_id: ChannelId,
 ) -> Result<()> {
-    let is_owner = VoiceChannelManager::verify_owner(ctx, channel.id, interaction.user.id).await?;
+    let is_owner = VoiceChannelManager::verify_owner(ctx, channel_id, interaction.user.id).await?;
 
     if !is_owner {
         return Err(Error::MissingPermissions(PermissionError::NotOwner));
     }
 
-    let mut channel_data = VoiceChannelManager::take(ctx, channel.id).await?;
+    let mut channel_data = VoiceChannelManager::take(ctx, channel_id).await?;
     channel_data.reset();
     channel_data.save(ctx).await;
+
+    let channel = guild_id
+        .channels(ctx)
+        .await?
+        .remove(&channel_id)
+        .ok_or(Error::ChannelNotFound(channel_id))?;
 
     let everyone_permissions = channel
         .permission_overwrites
         .iter()
-        .find(|perm| perm.kind == PermissionOverwriteType::Role(everyone_role))
+        .find(|perm| perm.kind == PermissionOverwriteType::Role(guild_id.everyone_role()))
         .expect("Expected everyone role in channel permissions");
 
-    channel
+    channel_id
         .edit(
             ctx,
             EditChannel::new()

@@ -1,5 +1,5 @@
 use serenity::all::{
-    CommandInteraction, Context, EditInteractionResponse, GuildChannel, PermissionOverwriteType,
+    ChannelId, CommandInteraction, Context, EditInteractionResponse, PermissionOverwriteType,
     ResolvedOption, ResolvedValue,
 };
 use zayden_core::parse_options;
@@ -10,7 +10,7 @@ pub async fn unblock(
     ctx: &Context,
     interaction: &CommandInteraction,
     options: &Vec<ResolvedOption<'_>>,
-    channel: GuildChannel,
+    channel_id: ChannelId,
 ) -> Result<(), Error> {
     let options = parse_options(options);
 
@@ -19,7 +19,7 @@ pub async fn unblock(
         _ => unreachable!("User option is required"),
     };
 
-    channel
+    channel_id
         .delete_permission(ctx, PermissionOverwriteType::Member(user.id))
         .await?;
 

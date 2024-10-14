@@ -1,6 +1,6 @@
 use serenity::all::{
-    CommandInteraction, Context, EditInteractionResponse, GuildChannel, GuildId,
-    PermissionOverwrite, PermissionOverwriteType, Permissions, ResolvedOption, ResolvedValue,
+    ChannelId, CommandInteraction, Context, EditInteractionResponse, GuildId, PermissionOverwrite,
+    PermissionOverwriteType, Permissions, ResolvedOption, ResolvedValue,
 };
 use zayden_core::parse_options;
 
@@ -11,7 +11,7 @@ pub async fn block(
     interaction: &CommandInteraction,
     options: &Vec<ResolvedOption<'_>>,
     guild_id: GuildId,
-    channel: GuildChannel,
+    channel_id: ChannelId,
 ) -> Result<(), Error> {
     let options = parse_options(options);
 
@@ -20,11 +20,11 @@ pub async fn block(
         _ => unreachable!("User option is required"),
     };
 
-    let mut channel_data = VoiceChannelManager::take(ctx, channel.id).await?;
+    let mut channel_data = VoiceChannelManager::take(ctx, channel_id).await?;
     channel_data.block(user.id);
     channel_data.save(ctx).await;
 
-    channel
+    channel_id
         .create_permission(
             ctx,
             PermissionOverwrite {

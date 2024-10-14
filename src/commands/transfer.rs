@@ -1,5 +1,5 @@
 use serenity::all::{
-    CommandInteraction, Context, GuildChannel, PermissionOverwrite, PermissionOverwriteType,
+    ChannelId, CommandInteraction, Context, PermissionOverwrite, PermissionOverwriteType,
     Permissions,
 };
 use serenity::all::{EditInteractionResponse, ResolvedOption, ResolvedValue};
@@ -13,9 +13,9 @@ pub async fn transfer(
     ctx: &Context,
     interaction: &CommandInteraction,
     options: &Vec<ResolvedOption<'_>>,
-    channel: GuildChannel,
+    channel_id: ChannelId,
 ) -> Result<()> {
-    let is_owner = VoiceChannelManager::verify_owner(ctx, channel.id, interaction.user.id).await?;
+    let is_owner = VoiceChannelManager::verify_owner(ctx, channel_id, interaction.user.id).await?;
 
     if !is_owner {
         return Err(Error::MissingPermissions(PermissionError::NotOwner));
@@ -28,11 +28,11 @@ pub async fn transfer(
         _ => unreachable!("User option is required"),
     };
 
-    let mut channel_data = VoiceChannelManager::take(ctx, channel.id).await?;
+    let mut channel_data = VoiceChannelManager::take(ctx, channel_id).await?;
     channel_data.owner = user.id;
     channel_data.save(ctx).await;
 
-    channel
+    channel_id
         .create_permission(
             ctx,
             PermissionOverwrite {

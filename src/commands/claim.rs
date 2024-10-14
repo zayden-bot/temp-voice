@@ -1,7 +1,6 @@
 use serenity::all::{ChannelId, EditInteractionResponse, UserId};
 use serenity::all::{
-    CommandInteraction, Context, GuildChannel, PermissionOverwrite, PermissionOverwriteType,
-    Permissions,
+    CommandInteraction, Context, PermissionOverwrite, PermissionOverwriteType, Permissions,
 };
 
 use crate::voice_channel_manager::VoiceChannelData;
@@ -12,11 +11,11 @@ use crate::VoiceStateCache;
 pub async fn claim(
     ctx: &Context,
     interaction: &CommandInteraction,
-    channel: GuildChannel,
+    channel_id: ChannelId,
 ) -> Result<(), Error> {
-    match VoiceChannelManager::take(ctx, channel.id).await {
+    match VoiceChannelManager::take(ctx, channel_id).await {
         Ok(mut channel_data) => {
-            if is_claimable(ctx, channel_data.owner, channel.id).await {
+            if is_claimable(ctx, channel_data.owner, channel_id).await {
                 return Err(Error::OwnerInChannel);
             }
 
@@ -24,11 +23,11 @@ pub async fn claim(
             channel_data.save(ctx).await;
         }
         Err(_) => {
-            VoiceChannelData::new(channel.id, interaction.user.id);
+            VoiceChannelData::new(channel_id, interaction.user.id);
         }
     };
 
-    channel
+    channel_id
         .create_permission(
             ctx,
             PermissionOverwrite {

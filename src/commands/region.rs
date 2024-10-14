@@ -1,6 +1,6 @@
 use serenity::all::{
-    CommandInteraction, Context, EditChannel, EditInteractionResponse, GuildChannel,
-    ResolvedOption, ResolvedValue,
+    ChannelId, CommandInteraction, Context, EditChannel, EditInteractionResponse, ResolvedOption,
+    ResolvedValue,
 };
 use zayden_core::parse_options;
 
@@ -10,7 +10,7 @@ pub async fn region(
     ctx: &Context,
     interaction: &CommandInteraction,
     options: &Vec<ResolvedOption<'_>>,
-    mut channel: GuildChannel,
+    channel_id: ChannelId,
 ) -> Result<(), Error> {
     let options = parse_options(options);
 
@@ -19,7 +19,7 @@ pub async fn region(
         _ => None,
     };
 
-    channel
+    channel_id
         .edit(ctx, EditChannel::new().voice_region(region))
         .await?;
 

@@ -1,5 +1,5 @@
 use serenity::all::{
-    CommandInteraction, Context, EditChannel, GuildChannel, PermissionOverwrite,
+    ChannelId, CommandInteraction, Context, EditChannel, PermissionOverwrite,
     PermissionOverwriteType, Permissions, RoleId,
 };
 use serenity::all::{EditInteractionResponse, ResolvedOption, ResolvedValue};
@@ -13,10 +13,10 @@ pub async fn password(
     ctx: &Context,
     interaction: &CommandInteraction,
     options: &Vec<ResolvedOption<'_>>,
+    channel_id: ChannelId,
     everyone_role: RoleId,
-    mut channel: GuildChannel,
 ) -> Result<()> {
-    let is_owner = VoiceChannelManager::verify_owner(ctx, channel.id, interaction.user.id).await?;
+    let is_owner = VoiceChannelManager::verify_owner(ctx, channel_id, interaction.user.id).await?;
 
     if !is_owner {
         return Err(Error::MissingPermissions(PermissionError::NotOwner));
@@ -29,7 +29,7 @@ pub async fn password(
         _ => unreachable!("Password option is required"),
     };
 
-    let mut channel_data = VoiceChannelManager::take(ctx, channel.id).await?;
+    let mut channel_data = VoiceChannelManager::take(ctx, channel_id).await?;
     channel_data.password = Some(pass.to_string());
     channel_data.save(ctx).await;
 
@@ -46,7 +46,7 @@ pub async fn password(
         },
     ];
 
-    channel
+    channel_id
         .edit(ctx, EditChannel::new().permissions(perms))
         .await?;
 
