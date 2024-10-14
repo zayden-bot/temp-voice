@@ -16,17 +16,7 @@ pub async fn password(
     everyone_role: RoleId,
     mut channel: GuildChannel,
 ) -> Result<()> {
-    let is_owner = {
-        let data = ctx.data.read().await;
-        let manager = data
-            .get::<VoiceChannelManager>()
-            .expect("Expected VoiceChannelManager in TypeMap");
-        let channel_data = manager
-            .get(&channel.id)
-            .expect("Expected channel in manager");
-
-        channel_data.owner == interaction.user.id
-    };
+    let is_owner = VoiceChannelManager::verify_owner(ctx, channel.id, interaction.user.id).await?;
 
     if !is_owner {
         return Err(Error::MissingPermissions(PermissionError::NotOwner));

@@ -21,20 +21,11 @@ pub async fn join(
     };
 
     let pass = match options.get("pass") {
-        Some(ResolvedValue::String(pass)) => pass,
+        Some(ResolvedValue::String(pass)) => *pass,
         _ => unreachable!("Password option is required"),
     };
 
-    let is_valid = {
-        let data = ctx.data.read().await;
-        let manager = data
-            .get::<VoiceChannelManager>()
-            .expect("Expected VoiceChannelManager in TypeMap");
-        let channel_data = manager
-            .get(&channel.id)
-            .expect("Expected channel in manager");
-        channel_data.password == Some(pass.to_string())
-    };
+    let is_valid = VoiceChannelManager::verify_password(ctx, channel.id, pass).await?;
 
     if !is_valid {
         return Err(Error::InvalidPassword);

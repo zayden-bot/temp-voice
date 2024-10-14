@@ -24,6 +24,36 @@ impl VoiceChannelManager {
             None => Err(Error::ChannelNotFound(channel_id)),
         }
     }
+
+    pub async fn verify_owner(
+        ctx: &Context,
+        channel_id: ChannelId,
+        user_id: UserId,
+    ) -> Result<bool> {
+        let data = ctx.data.read().await;
+        let manager = data
+            .get::<VoiceChannelManager>()
+            .expect("Expected VoiceChannelManager in TypeMap");
+        let owner = match manager.get(&channel_id) {
+            Some(channel_data) => channel_data.owner,
+            None => return Err(Error::ChannelNotFound(channel_id)),
+        };
+
+        Ok(owner == user_id)
+    }
+
+    pub async fn verify_password(ctx: &Context, channel_id: ChannelId, pass: &str) -> Result<bool> {
+        let data = ctx.data.read().await;
+        let manager = data
+            .get::<VoiceChannelManager>()
+            .expect("Expected VoiceChannelManager in TypeMap");
+        let password = match manager.get(&channel_id) {
+            Some(channel_data) => channel_data.password.as_deref(),
+            None => return Err(Error::ChannelNotFound(channel_id)),
+        };
+
+        Ok(password == Some(pass))
+    }
 }
 
 impl TypeMapKey for VoiceChannelManager {
