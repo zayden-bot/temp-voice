@@ -38,10 +38,10 @@ use untrust::untrust;
 
 use serenity::all::{
     CommandInteraction, CommandOptionType, Context, CreateCommand, CreateCommandOption,
-    PermissionOverwriteType, Permissions, ResolvedValue,
+    ResolvedValue,
 };
 
-use crate::{error::PermissionError, get_voice_state, Error, Result};
+use crate::{error::PermissionError, get_voice_state, Error, Result, VoiceChannelManager};
 
 pub struct VoiceCommand;
 
@@ -56,94 +56,126 @@ impl VoiceCommand {
             _ => unreachable!("Subcommand is required"),
         };
 
-        match command.name {
-            "create" => {
-                create(ctx, interaction, guild_id, options).await?;
-                return Ok(());
-            }
-            "join" => {
-                join(ctx, interaction, options, guild_id).await?;
-                return Ok(());
-            }
-            _ => {}
-        }
-
         let voice_state = get_voice_state(ctx, guild_id, interaction.user.id)
             .await
             .map_err(|_| Error::MemberNotInVoiceChannel)?;
 
-        let voice_channel = voice_state
+        let channel_id = voice_state
             .channel_id
             .ok_or(Error::MemberNotInVoiceChannel)?;
 
-        let mut channels = guild_id.channels(ctx).await?;
-        let channel = channels
-            .remove(&voice_channel)
-            .expect("Voice channel should exist if member is in it");
-
-        if !channel.permission_overwrites.iter().any(|overwrite| {
-            overwrite.kind == PermissionOverwriteType::Member(interaction.user.id)
-                && overwrite.allow.contains(Permissions::MANAGE_CHANNELS)
-        }) {
-            return Err(Error::MissingPermissions(PermissionError::NotTrusted));
-        }
+        let is_owner =
+            VoiceChannelManager::verify_owner(ctx, channel_id, interaction.user.id).await?;
+        let is_trusted = is_owner
+            || VoiceChannelManager::verify_trusted(ctx, channel_id, interaction.user.id).await?;
 
         let everyone_role = guild_id.everyone_role();
 
         match command.name {
+            "create" => {
+                create(ctx, interaction, guild_id, options).await?;
+            }
+            "join" => {
+                join(ctx, interaction, options, guild_id).await?;
+            }
+            "claim" => {
+                claim(ctx, interaction, channel_id).await?;
+            }
             "name" => {
-                name(ctx, interaction, options, channel).await?;
+                if !is_trusted {
+                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+                }
+                name(ctx, interaction, options, channel_id).await?;
             }
             "limit" => {
-                limit(ctx, interaction, options, channel).await?;
+                if !is_trusted {
+                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+                }
+                limit(ctx, interaction, options, channel_id).await?;
             }
             "privacy" => {
-                privacy(ctx, interaction, options, everyone_role, channel).await?;
+                if !is_trusted {
+                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+                }
+                privacy(ctx, interaction, options, everyone_role, channel_id).await?;
             }
             "waiting" => {
                 // waiting(ctx, interaction, guild_id, options).await?;
             }
             "trust" => {
-                trust(ctx, interaction, options, channel).await?;
+                if !is_trusted {
+                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+                }
+                trust(ctx, interaction, options, channel_id).await?;
             }
             "untrust" => {
-                untrust(ctx, interaction, options, channel).await?;
+                if !is_trusted {
+                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+                }
+                untrust(ctx, interaction, options, channel_id).await?;
             }
             "invite" => {
-                invite(ctx, interaction, options, channel).await?;
+                if !is_trusted {
+                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+                }
+                invite(ctx, interaction, options, channel_id).await?;
             }
             "kick" => {
+                if !is_trusted {
+                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+                }
                 kick(ctx, interaction, options, guild_id).await?;
             }
             "region" => {
-                region(ctx, interaction, options, channel).await?;
+                if !is_trusted {
+                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+                }
+                region(ctx, interaction, options, channel_id).await?;
             }
             "block" => {
-                block(ctx, interaction, options, guild_id, channel).await?;
+                if !is_trusted {
+                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+                }
+                block(ctx, interaction, options, guild_id, channel_id).await?;
             }
             "unblock" => {
-                unblock(ctx, interaction, options, channel).await?;
-            }
-            "claim" => {
-                claim(ctx, interaction, channel).await?;
-            }
-            "transfer" => {
-                transfer(ctx, interaction, options, channel).await?;
+                if !is_trusted {
+                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+                }
+                unblock(ctx, interaction, options, channel_id).await?;
             }
             "delete" => {
-                delete(ctx, interaction, channel).await?;
+                if !is_trusted {
+                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+                }
+                delete(ctx, interaction, channel_id).await?;
             }
             "bitrate" => {
-                bitrate(ctx, interaction, options, channel).await?;
+                if !is_trusted {
+                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+                }
+                bitrate(ctx, interaction, options, channel_id).await?;
             }
             "info" => {
                 // info(ctx, interaction, guild_id, options).await?;
             }
             "password" => {
-                password(ctx, interaction, options, everyone_role, channel).await?;
+                if !is_trusted {
+                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+                }
+                password(ctx, interaction, options, channel_id, everyone_role).await?;
             }
             "reset" => {
-                reset(ctx, interaction, channel, everyone_role).await?;
+                if !is_trusted {
+                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+                }
+                reset(ctx, interaction, guild_id, channel_id).await?;
+            }
+            "transfer" => {
+                if !is_owner {
+                    return Err(Error::MissingPermissions(PermissionError::NotOwner));
+                }
+                transfer(ctx, interaction, options, channel_id).await?;
             }
             _ => unreachable!("Invalid subcommand name"),
         };

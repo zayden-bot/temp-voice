@@ -42,6 +42,23 @@ impl VoiceChannelManager {
         Ok(owner == user_id)
     }
 
+    pub async fn verify_trusted(
+        ctx: &Context,
+        channel_id: ChannelId,
+        user_id: UserId,
+    ) -> Result<bool> {
+        let data = ctx.data.read().await;
+        let manager = data
+            .get::<VoiceChannelManager>()
+            .expect("Expected VoiceChannelManager in TypeMap");
+        let channel_data = match manager.get(&channel_id) {
+            Some(channel_data) => channel_data,
+            None => return Err(Error::ChannelNotFound(channel_id)),
+        };
+
+        Ok(channel_data.trusted.contains(&user_id))
+    }
+
     pub async fn verify_password(ctx: &Context, channel_id: ChannelId, pass: &str) -> Result<bool> {
         let data = ctx.data.read().await;
         let manager = data
