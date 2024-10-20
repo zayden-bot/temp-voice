@@ -1,11 +1,22 @@
 use serenity::all::{ChannelId, Context, DiscordJsonError, ErrorResponse, HttpError};
+use sqlx::{Database, Pool};
 
-use crate::{CachedState, Result, VoiceChannelManager, VoiceStateCache};
+use crate::{
+    CachedState, PersistentVoiceChannelManager, Result, TemporaryVoiceChannelManager,
+    VoiceStateCache,
+};
 
 const CATEGORY_ID: ChannelId = ChannelId::new(923679215205892098);
 const CREATOR_CHANNEL_ID: ChannelId = ChannelId::new(1289436847688253550);
 
-pub async fn channel_deleter(ctx: &Context, old: Option<CachedState>) -> Result<()> {
+pub async fn channel_deleter<
+    TempManager: TemporaryVoiceChannelManager,
+    PersistentManager: PersistentVoiceChannelManager,
+>(
+    ctx: &Context,
+    pool: &Pool<impl Database>,
+    old: Option<CachedState>,
+) -> Result<()> {
     let old = match old {
         Some(old) => old,
         None => return Ok(()),
@@ -16,7 +27,11 @@ pub async fn channel_deleter(ctx: &Context, old: Option<CachedState>) -> Result<
         _ => return Ok(()),
     };
 
-    let _ = VoiceChannelManager::take(ctx, channel_id).await;
+    if PersistentManager::is_persistent(pool, channel_id).await? {
+        return Ok(());
+    }
+
+    let _ = TempManager::take(ctx, channel_id).await;
 
     let channel = match channel_id.to_channel(ctx).await {
         Ok(channel) => channel,
