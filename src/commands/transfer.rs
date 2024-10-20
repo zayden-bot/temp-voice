@@ -6,16 +6,15 @@ use serenity::all::{EditInteractionResponse, ResolvedOption, ResolvedValue};
 use zayden_core::parse_options;
 
 use crate::error::PermissionError;
-use crate::VoiceChannelManager;
-use crate::{Error, Result};
+use crate::{Error, Result, TemporaryVoiceChannelManager};
 
-pub async fn transfer(
+pub async fn transfer<Manager: TemporaryVoiceChannelManager>(
     ctx: &Context,
     interaction: &CommandInteraction,
     options: &Vec<ResolvedOption<'_>>,
     channel_id: ChannelId,
 ) -> Result<()> {
-    let is_owner = VoiceChannelManager::verify_owner(ctx, channel_id, interaction.user.id).await?;
+    let is_owner = Manager::verify_owner(ctx, channel_id, interaction.user.id).await?;
 
     if !is_owner {
         return Err(Error::MissingPermissions(PermissionError::NotOwner));
@@ -28,7 +27,7 @@ pub async fn transfer(
         _ => unreachable!("User option is required"),
     };
 
-    let mut channel_data = VoiceChannelManager::take(ctx, channel_id).await?;
+    let mut channel_data = Manager::take(ctx, channel_id).await?;
     channel_data.owner = user.id;
     channel_data.save(ctx).await;
 

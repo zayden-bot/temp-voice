@@ -3,17 +3,14 @@ use serenity::all::{
     CommandInteraction, Context, PermissionOverwrite, PermissionOverwriteType, Permissions,
 };
 
-use crate::voice_channel_manager::VoiceChannelData;
-use crate::Error;
-use crate::VoiceChannelManager;
-use crate::VoiceStateCache;
+use crate::{Error, TemporaryVoiceChannelManager, VoiceChannelData, VoiceStateCache};
 
-pub async fn claim(
+pub async fn claim<Manager: TemporaryVoiceChannelManager>(
     ctx: &Context,
     interaction: &CommandInteraction,
     channel_id: ChannelId,
 ) -> Result<(), Error> {
-    let channel_data = match VoiceChannelManager::take(ctx, channel_id).await {
+    let channel_data = match Manager::take(ctx, channel_id).await {
         Ok(mut channel_data) => {
             if is_claimable(ctx, channel_data.owner, channel_id).await {
                 return Err(Error::OwnerInChannel);

@@ -2,22 +2,21 @@ use serenity::all::{ChannelId, EditInteractionResponse, GuildId};
 use serenity::all::{CommandInteraction, Context, EditChannel, PermissionOverwriteType};
 
 use crate::error::PermissionError;
-use crate::VoiceChannelManager;
-use crate::{Error, Result};
+use crate::{Error, Result, TemporaryVoiceChannelManager};
 
-pub async fn reset(
+pub async fn reset<Manager: TemporaryVoiceChannelManager>(
     ctx: &Context,
     interaction: &CommandInteraction,
     guild_id: GuildId,
     channel_id: ChannelId,
 ) -> Result<()> {
-    let is_owner = VoiceChannelManager::verify_owner(ctx, channel_id, interaction.user.id).await?;
+    let is_owner = Manager::verify_owner(ctx, channel_id, interaction.user.id).await?;
 
     if !is_owner {
         return Err(Error::MissingPermissions(PermissionError::NotOwner));
     }
 
-    let mut channel_data = VoiceChannelManager::take(ctx, channel_id).await?;
+    let mut channel_data = Manager::take(ctx, channel_id).await?;
     channel_data.reset();
     channel_data.save(ctx).await;
 

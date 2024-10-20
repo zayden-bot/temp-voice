@@ -7,13 +7,13 @@ use serenity::all::{
 };
 use zayden_core::parse_options;
 
-use crate::{Error, VoiceChannelManager};
+use crate::{Error, TemporaryVoiceChannelManager};
 
 use crate::get_voice_state;
 
 const CATEGORY_ID: ChannelId = ChannelId::new(923679215205892098);
 
-pub async fn create(
+pub async fn create<Manager: TemporaryVoiceChannelManager>(
     ctx: &Context,
     interaction: &serenity::all::CommandInteraction,
     guild_id: GuildId,
@@ -73,7 +73,7 @@ pub async fn create(
         .permissions(perms);
 
     let vc = guild_id.create_channel(ctx, vc_builder).await?;
-    VoiceChannelManager::register_voice_channel(ctx, vc.id, interaction.user.id).await;
+    Manager::register_voice_channel(ctx, vc.id, interaction.user.id).await;
 
     let move_result = guild_id.move_member(ctx, interaction.user.id, vc.id).await;
 

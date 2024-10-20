@@ -9,6 +9,7 @@ mod kick;
 mod limit;
 mod name;
 mod password;
+mod persist;
 mod privacy;
 mod region;
 mod reset;
@@ -28,9 +29,11 @@ use kick::kick;
 use limit::limit;
 use name::name;
 use password::password;
+use persist::persist;
 use privacy::privacy;
 use region::region;
 use reset::reset;
+use sqlx::{Database, Pool};
 use transfer::transfer;
 use trust::trust;
 use unblock::unblock;
@@ -41,12 +44,23 @@ use serenity::all::{
     ResolvedValue,
 };
 
-use crate::{error::PermissionError, get_voice_state, Error, Result, VoiceChannelManager};
+use crate::{
+    error::PermissionError, get_voice_state, Error, PersistentVoiceChannelManager, Result,
+    TemporaryVoiceChannelManager,
+};
 
 pub struct VoiceCommand;
 
 impl VoiceCommand {
-    pub async fn run(ctx: &Context, interaction: &CommandInteraction) -> Result<()> {
+    pub async fn run<
+        Db: Database,
+        TempManager: TemporaryVoiceChannelManager,
+        PersistentManager: PersistentVoiceChannelManager,
+    >(
+        ctx: &Context,
+        interaction: &CommandInteraction,
+        pool: &Pool<Db>,
+    ) -> Result<()> {
         let guild_id = interaction.guild_id.ok_or(Error::CommandNotInGuild)?;
 
         let command = &interaction.data.options()[0];
@@ -56,34 +70,39 @@ impl VoiceCommand {
             _ => unreachable!("Subcommand is required"),
         };
 
-        let voice_state = get_voice_state(ctx, guild_id, interaction.user.id)
-            .await
-            .map_err(|_| Error::MemberNotInVoiceChannel)?;
-
-        let channel_id = voice_state
-            .channel_id
-            .ok_or(Error::MemberNotInVoiceChannel)?;
-
         match command.name {
             "create" => {
-                create(ctx, interaction, guild_id, options).await?;
+                create::<TempManager>(ctx, interaction, guild_id, options).await?;
                 return Ok(());
             }
             "join" => {
-                join(ctx, interaction, options, guild_id).await?;
-                return Ok(());
-            }
-            "claim" => {
-                claim(ctx, interaction, channel_id).await?;
+                join::<TempManager>(ctx, interaction, options, guild_id).await?;
                 return Ok(());
             }
             _ => {}
         }
 
-        let is_owner =
-            VoiceChannelManager::verify_owner(ctx, channel_id, interaction.user.id).await?;
-        let is_trusted = is_owner
-            || VoiceChannelManager::verify_trusted(ctx, channel_id, interaction.user.id).await?;
+        let channel_id = get_voice_state(ctx, guild_id, interaction.user.id)
+            .await
+            .ok()
+            .and_then(|state| state.channel_id);
+
+        if command.name == "persist" {
+            persist::<TempManager, PersistentManager>(ctx, interaction, pool, options, channel_id)
+                .await?;
+            return Ok(());
+        }
+
+        let channel_id = channel_id.ok_or(Error::MemberNotInVoiceChannel)?;
+
+        if command.name == "claim" {
+            claim::<TempManager>(ctx, interaction, channel_id).await?;
+            return Ok(());
+        }
+
+        let is_owner = TempManager::verify_owner(ctx, channel_id, interaction.user.id).await?;
+        let is_trusted =
+            is_owner || TempManager::verify_trusted(ctx, channel_id, interaction.user.id).await?;
 
         let everyone_role = guild_id.everyone_role();
 
@@ -113,19 +132,19 @@ impl VoiceCommand {
                 if !is_trusted {
                     return Err(Error::MissingPermissions(PermissionError::NotTrusted));
                 }
-                trust(ctx, interaction, options, channel_id).await?;
+                trust::<TempManager>(ctx, interaction, options, channel_id).await?;
             }
             "untrust" => {
                 if !is_trusted {
                     return Err(Error::MissingPermissions(PermissionError::NotTrusted));
                 }
-                untrust(ctx, interaction, options, channel_id).await?;
+                untrust::<TempManager>(ctx, interaction, options, channel_id).await?;
             }
             "invite" => {
                 if !is_trusted {
                     return Err(Error::MissingPermissions(PermissionError::NotTrusted));
                 }
-                invite(ctx, interaction, options, channel_id).await?;
+                invite::<TempManager>(ctx, interaction, options, channel_id).await?;
             }
             "kick" => {
                 if !is_trusted {
@@ -143,7 +162,7 @@ impl VoiceCommand {
                 if !is_trusted {
                     return Err(Error::MissingPermissions(PermissionError::NotTrusted));
                 }
-                block(ctx, interaction, options, guild_id, channel_id).await?;
+                block::<TempManager>(ctx, interaction, options, guild_id, channel_id).await?;
             }
             "unblock" => {
                 if !is_trusted {
@@ -170,19 +189,20 @@ impl VoiceCommand {
                 if !is_trusted {
                     return Err(Error::MissingPermissions(PermissionError::NotTrusted));
                 }
-                password(ctx, interaction, options, channel_id, everyone_role).await?;
+                password::<TempManager>(ctx, interaction, options, channel_id, everyone_role)
+                    .await?;
             }
             "reset" => {
                 if !is_trusted {
                     return Err(Error::MissingPermissions(PermissionError::NotTrusted));
                 }
-                reset(ctx, interaction, guild_id, channel_id).await?;
+                reset::<TempManager>(ctx, interaction, guild_id, channel_id).await?;
             }
             "transfer" => {
                 if !is_owner {
                     return Err(Error::MissingPermissions(PermissionError::NotOwner));
                 }
-                transfer(ctx, interaction, options, channel_id).await?;
+                transfer::<TempManager>(ctx, interaction, options, channel_id).await?;
             }
             _ => unreachable!("Invalid subcommand name"),
         };

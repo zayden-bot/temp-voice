@@ -4,9 +4,9 @@ use serenity::all::{
 };
 use zayden_core::parse_options;
 
-use crate::{Error, VoiceChannelManager};
+use crate::{Error, TemporaryVoiceChannelManager};
 
-pub async fn untrust(
+pub async fn untrust<Manager: TemporaryVoiceChannelManager>(
     ctx: &Context,
     interaction: &CommandInteraction,
     options: &Vec<ResolvedOption<'_>>,
@@ -19,7 +19,7 @@ pub async fn untrust(
         _ => unreachable!("User option is required"),
     };
 
-    let mut channel_data = VoiceChannelManager::take(ctx, channel_id).await?;
+    let mut channel_data = Manager::take(ctx, channel_id).await?;
     channel_data.untrust(user.id);
     channel_data.save(ctx).await;
 

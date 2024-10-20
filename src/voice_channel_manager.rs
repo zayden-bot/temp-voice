@@ -1,19 +1,36 @@
 use std::collections::{HashMap, HashSet};
 
+use async_trait::async_trait;
 use serenity::all::{ChannelId, Context, UserId};
 use serenity::prelude::TypeMapKey;
+use sqlx::{Database, Pool};
 
 use crate::{Error, Result};
 
-pub struct VoiceChannelManager;
+#[async_trait]
+pub trait TemporaryVoiceChannelManager {
+    async fn register_voice_channel(ctx: &Context, channel_id: ChannelId, owner_id: UserId);
+    async fn take(ctx: &Context, channel_id: ChannelId) -> Result<VoiceChannelData>;
+    async fn verify_owner(ctx: &Context, channel_id: ChannelId, user_id: UserId) -> Result<bool>;
+    async fn verify_trusted(ctx: &Context, channel_id: ChannelId, user_id: UserId) -> Result<bool>;
+    async fn verify_password(ctx: &Context, channel_id: ChannelId, pass: &str) -> Result<bool>;
+}
 
-impl VoiceChannelManager {
-    pub async fn register_voice_channel(ctx: &Context, channel_id: ChannelId, owner_id: UserId) {
+#[async_trait]
+pub trait PersistentVoiceChannelManager {
+    async fn persist(pool: &Pool<impl Database>, channel_data: &VoiceChannelData) -> Result<()>;
+}
+
+pub struct VoiceChannelMap;
+
+#[async_trait]
+impl TemporaryVoiceChannelManager for VoiceChannelMap {
+    async fn register_voice_channel(ctx: &Context, channel_id: ChannelId, owner_id: UserId) {
         let channel_data = VoiceChannelData::new(channel_id, owner_id);
         channel_data.save(ctx).await;
     }
 
-    pub async fn take(ctx: &Context, channel_id: ChannelId) -> Result<VoiceChannelData> {
+    async fn take(ctx: &Context, channel_id: ChannelId) -> Result<VoiceChannelData> {
         let mut data = ctx.data.write().await;
         let manager = data
             .get_mut::<Self>()
@@ -25,14 +42,10 @@ impl VoiceChannelManager {
         }
     }
 
-    pub async fn verify_owner(
-        ctx: &Context,
-        channel_id: ChannelId,
-        user_id: UserId,
-    ) -> Result<bool> {
+    async fn verify_owner(ctx: &Context, channel_id: ChannelId, user_id: UserId) -> Result<bool> {
         let data = ctx.data.read().await;
         let manager = data
-            .get::<VoiceChannelManager>()
+            .get::<Self>()
             .expect("Expected VoiceChannelManager in TypeMap");
         let owner = match manager.get(&channel_id) {
             Some(channel_data) => channel_data.owner,
@@ -42,14 +55,10 @@ impl VoiceChannelManager {
         Ok(owner == user_id)
     }
 
-    pub async fn verify_trusted(
-        ctx: &Context,
-        channel_id: ChannelId,
-        user_id: UserId,
-    ) -> Result<bool> {
+    async fn verify_trusted(ctx: &Context, channel_id: ChannelId, user_id: UserId) -> Result<bool> {
         let data = ctx.data.read().await;
         let manager = data
-            .get::<VoiceChannelManager>()
+            .get::<Self>()
             .expect("Expected VoiceChannelManager in TypeMap");
         let channel_data = match manager.get(&channel_id) {
             Some(channel_data) => channel_data,
@@ -59,10 +68,10 @@ impl VoiceChannelManager {
         Ok(channel_data.owner == user_id || channel_data.trusted.contains(&user_id))
     }
 
-    pub async fn verify_password(ctx: &Context, channel_id: ChannelId, pass: &str) -> Result<bool> {
+    async fn verify_password(ctx: &Context, channel_id: ChannelId, pass: &str) -> Result<bool> {
         let data = ctx.data.read().await;
         let manager = data
-            .get::<VoiceChannelManager>()
+            .get::<Self>()
             .expect("Expected VoiceChannelManager in TypeMap");
         let password = match manager.get(&channel_id) {
             Some(channel_data) => channel_data.password.as_deref(),
@@ -73,7 +82,7 @@ impl VoiceChannelManager {
     }
 }
 
-impl TypeMapKey for VoiceChannelManager {
+impl TypeMapKey for VoiceChannelMap {
     type Value = HashMap<ChannelId, VoiceChannelData>;
 }
 
@@ -122,7 +131,7 @@ impl VoiceChannelData {
     pub async fn save(self, ctx: &Context) {
         let mut data = ctx.data.write().await;
         let manager = data
-            .get_mut::<VoiceChannelManager>()
+            .get_mut::<VoiceChannelMap>()
             .expect("Expected VoiceChannelManager in TypeMap");
         manager.insert(self.channel_id, self);
     }

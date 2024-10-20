@@ -4,10 +4,9 @@ use serenity::all::{
 use serenity::all::{EditInteractionResponse, ResolvedOption, ResolvedValue};
 use zayden_core::parse_options;
 
-use crate::VoiceChannelManager;
-use crate::{Error, Result};
+use crate::{Error, Result, TemporaryVoiceChannelManager};
 
-pub async fn join(
+pub async fn join<Manager: TemporaryVoiceChannelManager>(
     ctx: &Context,
     interaction: &CommandInteraction,
     options: &Vec<ResolvedOption<'_>>,
@@ -25,7 +24,7 @@ pub async fn join(
         _ => unreachable!("Password option is required"),
     };
 
-    let is_valid = VoiceChannelManager::verify_password(ctx, channel.id, pass).await?;
+    let is_valid = Manager::verify_password(ctx, channel.id, pass).await?;
 
     if !is_valid {
         return Err(Error::InvalidPassword);
