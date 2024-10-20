@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 use async_trait::async_trait;
 use serenity::all::{ChannelId, Context, UserId};
 use serenity::prelude::TypeMapKey;
+use sqlx::any::AnyQueryResult;
 use sqlx::{Database, Pool};
 
 use crate::{Error, Result};
@@ -18,8 +19,12 @@ pub trait TemporaryVoiceChannelManager {
 
 #[async_trait]
 pub trait PersistentVoiceChannelManager {
-    async fn persist(pool: &Pool<impl Database>, channel_data: &VoiceChannelData) -> Result<()>;
-    async fn is_persistent(pool: &Pool<impl Database>, channel_id: ChannelId) -> Result<bool>;
+    async fn persist(
+        pool: &Pool<impl Database>,
+        channel_data: &VoiceChannelData,
+    ) -> sqlx::Result<AnyQueryResult>;
+    async fn is_persistent(pool: &Pool<impl Database>, channel_id: ChannelId)
+        -> sqlx::Result<bool>;
 }
 
 pub struct VoiceChannelMap;
