@@ -23,12 +23,12 @@ pub trait VoiceChannelManager<Db: Database> {
 }
 
 #[derive(FromRow)]
-struct VoiceChannelRow {
-    id: i64,
-    owner_id: i64,
-    trusted_ids: Vec<i64>,
-    password: Option<String>,
-    persistent: bool,
+pub struct VoiceChannelRow {
+    pub id: i64,
+    pub owner_id: i64,
+    pub trusted_ids: Vec<i64>,
+    pub password: Option<String>,
+    pub persistent: bool,
 }
 
 #[derive(Default)]
