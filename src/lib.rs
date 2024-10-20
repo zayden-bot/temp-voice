@@ -14,7 +14,8 @@ pub use commands::VoiceCommand;
 pub use error::Error;
 use error::Result;
 pub use voice_channel_manager::{
-    PersistentVoiceChannelManager, TemporaryVoiceChannelManager, VoiceChannelData, VoiceChannelMap,
+    PersistentChannelData, PersistentVoiceChannelManager, TemporaryChannelData,
+    TemporaryVoiceChannelManager, VoiceChannelMap,
 };
 
 pub struct CachedState {

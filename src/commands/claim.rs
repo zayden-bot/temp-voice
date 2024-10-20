@@ -3,7 +3,7 @@ use serenity::all::{
     CommandInteraction, Context, PermissionOverwrite, PermissionOverwriteType, Permissions,
 };
 
-use crate::{Error, TemporaryVoiceChannelManager, VoiceChannelData, VoiceStateCache};
+use crate::{Error, TemporaryChannelData, TemporaryVoiceChannelManager, VoiceStateCache};
 
 pub async fn claim<Manager: TemporaryVoiceChannelManager>(
     ctx: &Context,
@@ -19,7 +19,7 @@ pub async fn claim<Manager: TemporaryVoiceChannelManager>(
             channel_data.owner = interaction.user.id;
             channel_data
         }
-        Err(_) => VoiceChannelData::new(channel_id, interaction.user.id),
+        Err(_) => TemporaryChannelData::new(channel_id, interaction.user.id),
     };
 
     channel_data.save(ctx).await;

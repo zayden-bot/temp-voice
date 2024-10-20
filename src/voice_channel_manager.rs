@@ -11,20 +11,10 @@ use crate::{Error, Result};
 #[async_trait]
 pub trait TemporaryVoiceChannelManager {
     async fn register_voice_channel(ctx: &Context, channel_id: ChannelId, owner_id: UserId);
-    async fn take(ctx: &Context, channel_id: ChannelId) -> Result<VoiceChannelData>;
+    async fn take(ctx: &Context, channel_id: ChannelId) -> Result<TemporaryChannelData>;
     async fn verify_owner(ctx: &Context, channel_id: ChannelId, user_id: UserId) -> Result<bool>;
     async fn verify_trusted(ctx: &Context, channel_id: ChannelId, user_id: UserId) -> Result<bool>;
     async fn verify_password(ctx: &Context, channel_id: ChannelId, pass: &str) -> Result<bool>;
-}
-
-#[async_trait]
-pub trait PersistentVoiceChannelManager {
-    async fn persist(
-        pool: &Pool<impl Database>,
-        channel_data: &VoiceChannelData,
-    ) -> sqlx::Result<AnyQueryResult>;
-    async fn is_persistent(pool: &Pool<impl Database>, channel_id: ChannelId)
-        -> sqlx::Result<bool>;
 }
 
 pub struct VoiceChannelMap;
@@ -32,11 +22,11 @@ pub struct VoiceChannelMap;
 #[async_trait]
 impl TemporaryVoiceChannelManager for VoiceChannelMap {
     async fn register_voice_channel(ctx: &Context, channel_id: ChannelId, owner_id: UserId) {
-        let channel_data = VoiceChannelData::new(channel_id, owner_id);
+        let channel_data = TemporaryChannelData::new(channel_id, owner_id);
         channel_data.save(ctx).await;
     }
 
-    async fn take(ctx: &Context, channel_id: ChannelId) -> Result<VoiceChannelData> {
+    async fn take(ctx: &Context, channel_id: ChannelId) -> Result<TemporaryChannelData> {
         let mut data = ctx.data.write().await;
         let manager = data
             .get_mut::<Self>()
@@ -89,10 +79,10 @@ impl TemporaryVoiceChannelManager for VoiceChannelMap {
 }
 
 impl TypeMapKey for VoiceChannelMap {
-    type Value = HashMap<ChannelId, VoiceChannelData>;
+    type Value = HashMap<ChannelId, TemporaryChannelData>;
 }
 
-pub struct VoiceChannelData {
+pub struct TemporaryChannelData {
     channel_id: ChannelId,
     pub owner: UserId,
     trusted: HashSet<UserId>,
@@ -100,7 +90,7 @@ pub struct VoiceChannelData {
     pub password: Option<String>,
 }
 
-impl VoiceChannelData {
+impl TemporaryChannelData {
     pub fn new(channel_id: ChannelId, owner: impl Into<UserId>) -> Self {
         Self {
             channel_id,
@@ -140,5 +130,28 @@ impl VoiceChannelData {
             .get_mut::<VoiceChannelMap>()
             .expect("Expected VoiceChannelManager in TypeMap");
         manager.insert(self.channel_id, self);
+    }
+}
+
+#[async_trait]
+pub trait PersistentVoiceChannelManager {
+    async fn persist(
+        pool: &Pool<impl Database>,
+        channel_data: &TemporaryChannelData,
+    ) -> sqlx::Result<AnyQueryResult>;
+    async fn is_persistent(pool: &Pool<impl Database>, channel_id: ChannelId)
+        -> sqlx::Result<bool>;
+}
+
+pub struct PersistentChannelData {
+    id: i64,
+    owner_id: i64,
+    trusted_ids: Vec<i64>,
+    password: Option<String>,
+}
+
+impl PersistentChannelData {
+    pub fn channel_id(&self) -> ChannelId {
+        ChannelId::new(self.id as u64)
     }
 }
