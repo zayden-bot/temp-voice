@@ -19,6 +19,7 @@ pub trait TemporaryVoiceChannelManager {
 #[async_trait]
 pub trait PersistentVoiceChannelManager {
     async fn persist(pool: &Pool<impl Database>, channel_data: &VoiceChannelData) -> Result<()>;
+    async fn is_persistent(pool: &Pool<impl Database>, channel_id: ChannelId) -> Result<bool>;
 }
 
 pub struct VoiceChannelMap;
