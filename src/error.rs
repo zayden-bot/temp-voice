@@ -20,6 +20,7 @@ pub enum Error {
     ChannelNotFound(ChannelId),
 
     Serenity(serenity::Error),
+    Sqlx(sqlx::Error),
 }
 
 impl ErrorResponse for Error {
@@ -60,5 +61,11 @@ impl std::error::Error for Error {}
 impl From<serenity::Error> for Error {
     fn from(error: serenity::Error) -> Self {
         Self::Serenity(error)
+    }
+}
+
+impl From<sqlx::Error> for Error {
+    fn from(error: sqlx::Error) -> Self {
+        Self::Sqlx(error)
     }
 }
