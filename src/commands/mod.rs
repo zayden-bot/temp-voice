@@ -495,5 +495,17 @@ impl VoiceCommand {
                 "reset",
                 "Reset the voice channel to default settings.",
             ))
+            .add_option(
+                CreateCommandOption::new(
+                    CommandOptionType::SubCommand,
+                    "persist",
+                    "Convert a temporary voice channel to a persistent voice channel.",
+                )
+                .add_sub_option(CreateCommandOption::new(
+                    CommandOptionType::Channel,
+                    "channel",
+                    "The voice channel to persist.",
+                )),
+            )
     }
 }
