@@ -1,24 +1,31 @@
-use serenity::all::{
-    ChannelId, CommandInteraction, Context, EditInteractionResponse, PermissionOverwrite,
-    PermissionOverwriteType, Permissions, ResolvedOption, ResolvedValue, RoleId,
-};
-use zayden_core::parse_options;
+use std::collections::HashMap;
 
-use crate::Error;
+use serenity::all::{
+    ChannelId, CommandInteraction, Context, EditInteractionResponse, GuildId, PermissionOverwrite,
+    PermissionOverwriteType, Permissions, ResolvedValue,
+};
+
+use crate::error::PermissionError;
+use crate::{Error, VoiceChannelData};
 
 pub async fn privacy(
     ctx: &Context,
     interaction: &CommandInteraction,
-    options: &Vec<ResolvedOption<'_>>,
-    everyone_role: RoleId,
+    mut options: HashMap<&str, &ResolvedValue<'_>>,
+    guild_id: GuildId,
     channel_id: ChannelId,
+    row: &VoiceChannelData,
 ) -> Result<(), Error> {
-    let options = parse_options(options);
+    if row.is_trusted(interaction.user.id) {
+        return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+    }
 
-    let privacy = match options.get("privacy") {
+    let privacy = match options.remove("privacy") {
         Some(ResolvedValue::String(privacy)) => privacy,
         _ => "visible",
     };
+
+    let everyone_role = guild_id.everyone_role();
 
     let perm = match privacy {
         "lock" => PermissionOverwrite {

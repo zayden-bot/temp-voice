@@ -1,20 +1,24 @@
-use serenity::all::{
-    ChannelId, CommandInteraction, Context, EditChannel, EditInteractionResponse, ResolvedOption,
-    ResolvedValue,
-};
-use zayden_core::parse_options;
+use std::collections::HashMap;
 
-use crate::Error;
+use serenity::all::{
+    ChannelId, CommandInteraction, Context, EditChannel, EditInteractionResponse, ResolvedValue,
+};
+
+use crate::error::PermissionError;
+use crate::{Error, VoiceChannelData};
 
 pub async fn limit(
     ctx: &Context,
     interaction: &CommandInteraction,
-    options: &Vec<ResolvedOption<'_>>,
+    mut options: HashMap<&str, &ResolvedValue<'_>>,
     channel_id: ChannelId,
+    row: &VoiceChannelData,
 ) -> Result<(), Error> {
-    let options = parse_options(options);
+    if row.is_trusted(interaction.user.id) {
+        return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+    }
 
-    let limit = match options.get("user_limit") {
+    let limit = match options.remove("user_limit") {
         Some(ResolvedValue::Integer(limit)) => (*limit).clamp(0, 99) as u32,
         _ => 0,
     };

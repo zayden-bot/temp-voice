@@ -1,37 +1,37 @@
+use std::collections::HashMap;
 use std::time::Duration;
 
 use serenity::all::EditInteractionResponse;
 use serenity::all::{
     ChannelId, ChannelType, Context, CreateChannel, GuildId, PermissionOverwrite,
-    PermissionOverwriteType, Permissions, ResolvedOption, ResolvedValue,
+    PermissionOverwriteType, Permissions, ResolvedValue,
 };
-use zayden_core::parse_options;
+use sqlx::{Database, Pool};
 
-use crate::{Error, TemporaryVoiceChannelManager};
+use crate::{Error, VoiceChannelData, VoiceChannelManager};
 
 use crate::get_voice_state;
 
 const CATEGORY_ID: ChannelId = ChannelId::new(923679215205892098);
 
-pub async fn create<Manager: TemporaryVoiceChannelManager>(
+pub async fn create<Db: Database, Manager: VoiceChannelManager<Db>>(
     ctx: &Context,
     interaction: &serenity::all::CommandInteraction,
+    pool: &Pool<Db>,
     guild_id: GuildId,
-    options: &Vec<ResolvedOption<'_>>,
+    mut options: HashMap<&str, &ResolvedValue<'_>>,
 ) -> Result<(), Error> {
-    let options = parse_options(options);
-
-    let name = match options.get("name") {
+    let name = match options.remove("name") {
         Some(ResolvedValue::String(name)) => name.to_string(),
         _ => format!("{}'s Channel", interaction.user.name),
     };
 
-    let limit = match options.get("limit") {
+    let limit = match options.remove("limit") {
         Some(ResolvedValue::Integer(limit)) => (*limit).clamp(0, 99) as u32,
         _ => 0,
     };
 
-    let privacy = match options.get("privacy") {
+    let privacy = match options.remove("privacy") {
         Some(ResolvedValue::String(privacy)) => privacy,
         _ => "visible",
     };
@@ -73,7 +73,9 @@ pub async fn create<Manager: TemporaryVoiceChannelManager>(
         .permissions(perms);
 
     let vc = guild_id.create_channel(ctx, vc_builder).await?;
-    Manager::register_voice_channel(ctx, vc.id, interaction.user.id).await;
+
+    let row = VoiceChannelData::new(vc.id, interaction.user.id);
+    row.save::<Db, Manager>(pool).await?;
 
     let move_result = guild_id.move_member(ctx, interaction.user.id, vc.id).await;
 

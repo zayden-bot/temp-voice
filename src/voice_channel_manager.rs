@@ -1,112 +1,84 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use async_trait::async_trait;
-use serenity::all::{ChannelId, Context, UserId};
-use serenity::prelude::TypeMapKey;
+use serenity::all::{ChannelId, UserId};
 use sqlx::any::AnyQueryResult;
+use sqlx::prelude::FromRow;
 use sqlx::{Database, Pool};
 
-use crate::{Error, Result};
+use crate::Result;
 
 #[async_trait]
-pub trait TemporaryVoiceChannelManager {
-    async fn register_voice_channel(ctx: &Context, channel_id: ChannelId, owner_id: UserId);
-    async fn take(ctx: &Context, channel_id: ChannelId) -> Result<TemporaryChannelData>;
-    async fn verify_owner(ctx: &Context, channel_id: ChannelId, user_id: UserId) -> Result<bool>;
-    async fn verify_trusted(ctx: &Context, channel_id: ChannelId, user_id: UserId) -> Result<bool>;
-    async fn verify_password(ctx: &Context, channel_id: ChannelId, pass: &str) -> Result<bool>;
+pub trait VoiceChannelManager<Db: Database> {
+    async fn save(
+        pool: &Pool<Db>,
+        id: impl Into<i64> + Send,
+        owner_id: impl Into<i64> + Send,
+        trusted_ids: &[i64],
+        password: Option<&str>,
+        persistent: impl Into<bool> + Send,
+    ) -> sqlx::Result<AnyQueryResult>;
+    async fn get(pool: &Pool<Db>, id: ChannelId) -> sqlx::Result<VoiceChannelData>;
+    async fn delete(pool: &Pool<Db>, id: ChannelId) -> sqlx::Result<AnyQueryResult>;
 }
 
-pub struct VoiceChannelMap;
-
-#[async_trait]
-impl TemporaryVoiceChannelManager for VoiceChannelMap {
-    async fn register_voice_channel(ctx: &Context, channel_id: ChannelId, owner_id: UserId) {
-        let channel_data = TemporaryChannelData::new(channel_id, owner_id);
-        channel_data.save(ctx).await;
-    }
-
-    async fn take(ctx: &Context, channel_id: ChannelId) -> Result<TemporaryChannelData> {
-        let mut data = ctx.data.write().await;
-        let manager = data
-            .get_mut::<Self>()
-            .expect("Expected VoiceChannelManager in TypeMap");
-
-        match manager.remove(&channel_id) {
-            Some(channel_data) => Ok(channel_data),
-            None => Err(Error::ChannelNotFound(channel_id)),
-        }
-    }
-
-    async fn verify_owner(ctx: &Context, channel_id: ChannelId, user_id: UserId) -> Result<bool> {
-        let data = ctx.data.read().await;
-        let manager = data
-            .get::<Self>()
-            .expect("Expected VoiceChannelManager in TypeMap");
-        let owner = match manager.get(&channel_id) {
-            Some(channel_data) => channel_data.owner,
-            None => return Err(Error::ChannelNotFound(channel_id)),
-        };
-
-        Ok(owner == user_id)
-    }
-
-    async fn verify_trusted(ctx: &Context, channel_id: ChannelId, user_id: UserId) -> Result<bool> {
-        let data = ctx.data.read().await;
-        let manager = data
-            .get::<Self>()
-            .expect("Expected VoiceChannelManager in TypeMap");
-        let channel_data = match manager.get(&channel_id) {
-            Some(channel_data) => channel_data,
-            None => return Err(Error::ChannelNotFound(channel_id)),
-        };
-
-        Ok(channel_data.owner == user_id || channel_data.trusted.contains(&user_id))
-    }
-
-    async fn verify_password(ctx: &Context, channel_id: ChannelId, pass: &str) -> Result<bool> {
-        let data = ctx.data.read().await;
-        let manager = data
-            .get::<Self>()
-            .expect("Expected VoiceChannelManager in TypeMap");
-        let password = match manager.get(&channel_id) {
-            Some(channel_data) => channel_data.password.as_deref(),
-            None => return Err(Error::ChannelNotFound(channel_id)),
-        };
-
-        Ok(password == Some(pass))
-    }
+#[derive(FromRow)]
+struct VoiceChannelRow {
+    id: i64,
+    owner_id: i64,
+    trusted_ids: Vec<i64>,
+    password: Option<String>,
+    persistent: bool,
 }
 
-impl TypeMapKey for VoiceChannelMap {
-    type Value = HashMap<ChannelId, TemporaryChannelData>;
-}
-
-pub struct TemporaryChannelData {
-    pub channel_id: ChannelId,
-    pub owner: UserId,
-    pub trusted: HashSet<UserId>,
+#[derive(Default)]
+pub struct VoiceChannelData {
+    pub id: ChannelId,
+    pub owner_id: UserId,
+    pub trusted_ids: HashSet<UserId>,
     pub open_invites: HashSet<UserId>,
     pub password: Option<String>,
+    pub persistent: bool,
 }
 
-impl TemporaryChannelData {
-    pub fn new(channel_id: ChannelId, owner: impl Into<UserId>) -> Self {
+impl VoiceChannelData {
+    pub fn new(id: ChannelId, owner_id: UserId) -> Self {
         Self {
-            channel_id,
-            owner: owner.into(),
-            trusted: HashSet::new(),
+            id,
+            owner_id,
+            trusted_ids: HashSet::new(),
             open_invites: HashSet::new(),
             password: None,
+            persistent: false,
         }
+    }
+
+    pub fn is_owner(&self, user_id: UserId) -> bool {
+        self.owner_id == user_id
+    }
+
+    pub fn is_trusted(&self, user_id: UserId) -> bool {
+        self.trusted_ids.contains(&user_id) || self.owner_id == user_id
+    }
+
+    pub fn verify_password(&self, pass: &str) -> bool {
+        self.password.as_deref() == Some(pass)
+    }
+
+    pub fn toggle_persist(&mut self) {
+        self.persistent = !self.persistent;
+    }
+
+    pub fn is_persistent(&self) -> bool {
+        self.persistent
     }
 
     pub fn trust(&mut self, id: impl Into<UserId>) {
-        self.trusted.insert(id.into());
+        self.trusted_ids.insert(id.into());
     }
 
     pub fn untrust(&mut self, id: impl Into<UserId>) {
-        self.trusted.remove(&id.into());
+        self.trusted_ids.remove(&id.into());
     }
 
     pub fn create_invite(&mut self, id: impl Into<UserId>) {
@@ -114,43 +86,62 @@ impl TemporaryChannelData {
     }
 
     pub fn block(&mut self, id: UserId) {
-        self.trusted.remove(&id);
+        self.trusted_ids.remove(&id);
         self.open_invites.remove(&id);
     }
 
     pub fn reset(&mut self) {
-        self.trusted.clear();
+        self.trusted_ids.clear();
         self.open_invites.clear();
         self.password = None;
     }
 
-    pub async fn save(self, ctx: &Context) {
-        let mut data = ctx.data.write().await;
-        let manager = data
-            .get_mut::<VoiceChannelMap>()
-            .expect("Expected VoiceChannelManager in TypeMap");
-        manager.insert(self.channel_id, self);
+    pub async fn save<Db: Database, Manager: VoiceChannelManager<Db>>(
+        self,
+        pool: &Pool<Db>,
+    ) -> Result<()> {
+        let trusted_ids = self
+            .trusted_ids
+            .iter()
+            .map(|id| id.get() as i64)
+            .collect::<Vec<_>>();
+
+        Manager::save(
+            pool,
+            self.id.get() as i64,
+            self.owner_id.get() as i64,
+            &trusted_ids,
+            self.password.as_deref(),
+            self.persistent,
+        )
+        .await?;
+
+        Ok(())
+    }
+
+    pub async fn delete<Db: Database, Manager: VoiceChannelManager<Db>>(
+        self,
+        pool: &Pool<Db>,
+    ) -> Result<()> {
+        Manager::delete(pool, self.id).await?;
+
+        Ok(())
     }
 }
 
-#[async_trait]
-pub trait PersistentVoiceChannelManager<Db: Database> {
-    async fn persist(
-        pool: &Pool<Db>,
-        channel_data: &TemporaryChannelData,
-    ) -> sqlx::Result<AnyQueryResult>;
-    async fn is_persistent(pool: &Pool<Db>, channel_id: ChannelId) -> sqlx::Result<bool>;
-}
-
-pub struct PersistentChannelData {
-    id: i64,
-    owner_id: i64,
-    trusted_ids: Vec<i64>,
-    password: Option<String>,
-}
-
-impl PersistentChannelData {
-    pub fn channel_id(&self) -> ChannelId {
-        ChannelId::new(self.id as u64)
+impl From<VoiceChannelRow> for VoiceChannelData {
+    fn from(row: VoiceChannelRow) -> Self {
+        Self {
+            id: ChannelId::new(row.id as u64),
+            owner_id: UserId::new(row.owner_id as u64),
+            trusted_ids: row
+                .trusted_ids
+                .into_iter()
+                .map(|id| UserId::new(id as u64))
+                .collect(),
+            open_invites: HashSet::new(),
+            password: row.password,
+            persistent: row.persistent,
+        }
     }
 }

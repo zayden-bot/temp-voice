@@ -1,36 +1,34 @@
+use std::collections::HashMap;
+
 use serenity::all::{
-    ChannelId, CommandInteraction, Context, EditChannel, PermissionOverwrite,
-    PermissionOverwriteType, Permissions, RoleId,
+    ChannelId, CommandInteraction, Context, EditChannel, EditInteractionResponse, GuildId,
+    PermissionOverwrite, PermissionOverwriteType, Permissions, ResolvedValue,
 };
-use serenity::all::{EditInteractionResponse, ResolvedOption, ResolvedValue};
-use zayden_core::parse_options;
+use sqlx::{Database, Pool};
 
 use crate::error::PermissionError;
-use crate::{Error, Result, TemporaryVoiceChannelManager};
+use crate::{Error, Result, VoiceChannelData, VoiceChannelManager};
 
-pub async fn password<Manager: TemporaryVoiceChannelManager>(
+pub async fn password<Db: Database, Manager: VoiceChannelManager<Db>>(
     ctx: &Context,
     interaction: &CommandInteraction,
-    options: &Vec<ResolvedOption<'_>>,
+    pool: &Pool<Db>,
+    mut options: HashMap<&str, &ResolvedValue<'_>>,
+    guild_id: GuildId,
     channel_id: ChannelId,
-    everyone_role: RoleId,
+    mut row: VoiceChannelData,
 ) -> Result<()> {
-    let is_owner = Manager::verify_owner(ctx, channel_id, interaction.user.id).await?;
-
-    if !is_owner {
+    if !row.is_owner(interaction.user.id) {
         return Err(Error::MissingPermissions(PermissionError::NotOwner));
     }
 
-    let options = parse_options(options);
-
-    let pass = match options.get("pass") {
+    let pass = match options.remove("pass") {
         Some(ResolvedValue::String(pass)) => pass,
         _ => unreachable!("Password option is required"),
     };
 
-    let mut channel_data = Manager::take(ctx, channel_id).await?;
-    channel_data.password = Some(pass.to_string());
-    channel_data.save(ctx).await;
+    row.password = Some(pass.to_string());
+    row.save::<Db, Manager>(pool).await?;
 
     let perms = vec![
         PermissionOverwrite {
@@ -41,7 +39,7 @@ pub async fn password<Manager: TemporaryVoiceChannelManager>(
         PermissionOverwrite {
             allow: Permissions::empty(),
             deny: Permissions::CONNECT,
-            kind: PermissionOverwriteType::Role(everyone_role),
+            kind: PermissionOverwriteType::Role(guild_id.everyone_role()),
         },
     ];
 

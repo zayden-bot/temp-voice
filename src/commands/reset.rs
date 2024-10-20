@@ -1,24 +1,26 @@
-use serenity::all::{ChannelId, EditInteractionResponse, GuildId};
-use serenity::all::{CommandInteraction, Context, EditChannel, PermissionOverwriteType};
+use serenity::all::{
+    ChannelId, CommandInteraction, Context, EditChannel, EditInteractionResponse, GuildId,
+    PermissionOverwriteType,
+};
+use sqlx::{Database, Pool};
 
 use crate::error::PermissionError;
-use crate::{Error, Result, TemporaryVoiceChannelManager};
+use crate::{Error, Result, VoiceChannelData, VoiceChannelManager};
 
-pub async fn reset<Manager: TemporaryVoiceChannelManager>(
+pub async fn reset<Db: Database, Manager: VoiceChannelManager<Db>>(
     ctx: &Context,
     interaction: &CommandInteraction,
+    pool: &Pool<Db>,
     guild_id: GuildId,
     channel_id: ChannelId,
+    mut row: VoiceChannelData,
 ) -> Result<()> {
-    let is_owner = Manager::verify_owner(ctx, channel_id, interaction.user.id).await?;
-
-    if !is_owner {
+    if !row.is_owner(interaction.user.id) {
         return Err(Error::MissingPermissions(PermissionError::NotOwner));
     }
 
-    let mut channel_data = Manager::take(ctx, channel_id).await?;
-    channel_data.reset();
-    channel_data.save(ctx).await;
+    row.reset();
+    row.save::<Db, Manager>(pool).await?;
 
     let channel = guild_id
         .channels(ctx)

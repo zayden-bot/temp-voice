@@ -1,19 +1,22 @@
-use serenity::all::{
-    CommandInteraction, Context, EditInteractionResponse, GuildId, ResolvedOption, ResolvedValue,
-};
-use zayden_core::parse_options;
+use std::collections::HashMap;
 
-use crate::Error;
+use serenity::all::{CommandInteraction, Context, EditInteractionResponse, GuildId, ResolvedValue};
+
+use crate::error::PermissionError;
+use crate::{Error, VoiceChannelData};
 
 pub async fn kick(
     ctx: &Context,
     interaction: &CommandInteraction,
-    options: &Vec<ResolvedOption<'_>>,
+    mut options: HashMap<&str, &ResolvedValue<'_>>,
     guild_id: GuildId,
+    row: &VoiceChannelData,
 ) -> Result<(), Error> {
-    let options = parse_options(options);
+    if row.is_trusted(interaction.user.id) {
+        return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+    }
 
-    let user = match options.get("member") {
+    let user = match options.remove("member") {
         Some(ResolvedValue::User(user, _)) => *user,
         _ => unreachable!("Member option is required"),
     };

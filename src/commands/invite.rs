@@ -1,28 +1,26 @@
+use std::collections::HashMap;
+
 use serenity::all::{
     ChannelId, CommandInteraction, Context, EditInteractionResponse, PermissionOverwrite,
-    PermissionOverwriteType, Permissions, ResolvedOption, ResolvedValue,
+    PermissionOverwriteType, Permissions, ResolvedValue,
 };
 use serenity::all::{CreateMessage, Mentionable};
-use zayden_core::parse_options;
 
-use crate::{Error, TemporaryVoiceChannelManager};
+use crate::{Error, VoiceChannelData};
 
-pub async fn invite<Manager: TemporaryVoiceChannelManager>(
+pub async fn invite(
     ctx: &Context,
     interaction: &CommandInteraction,
-    options: &Vec<ResolvedOption<'_>>,
+    mut options: HashMap<&str, &ResolvedValue<'_>>,
     channel_id: ChannelId,
+    mut row: VoiceChannelData,
 ) -> Result<(), Error> {
-    let options = parse_options(options);
-
-    let user = match options.get("user") {
+    let user = match options.remove("user") {
         Some(ResolvedValue::User(user, _member)) => user,
         _ => unreachable!("User option is required"),
     };
 
-    let mut channel_data = Manager::take(ctx, channel_id).await?;
-    channel_data.create_invite(user.id);
-    channel_data.save(ctx).await;
+    row.create_invite(user.id);
 
     channel_id
         .create_permission(

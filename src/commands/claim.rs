@@ -1,28 +1,24 @@
-use serenity::all::{ChannelId, EditInteractionResponse, UserId};
+use serenity::all::{ChannelId, EditInteractionResponse};
 use serenity::all::{
     CommandInteraction, Context, PermissionOverwrite, PermissionOverwriteType, Permissions,
 };
+use sqlx::{Database, Pool};
 
-use crate::{Error, TemporaryChannelData, TemporaryVoiceChannelManager, VoiceStateCache};
+use crate::{Error, VoiceChannelData, VoiceChannelManager, VoiceStateCache};
 
-pub async fn claim<Manager: TemporaryVoiceChannelManager>(
+pub async fn claim<Db: Database, Manager: VoiceChannelManager<Db>>(
     ctx: &Context,
     interaction: &CommandInteraction,
+    pool: &Pool<Db>,
     channel_id: ChannelId,
+    mut row: VoiceChannelData,
 ) -> Result<(), Error> {
-    let channel_data = match Manager::take(ctx, channel_id).await {
-        Ok(mut channel_data) => {
-            if is_claimable(ctx, channel_data.owner, channel_id).await {
-                return Err(Error::OwnerInChannel);
-            }
+    if !row.is_persistent() && is_claimable(ctx, &row).await {
+        return Err(Error::OwnerInChannel);
+    }
 
-            channel_data.owner = interaction.user.id;
-            channel_data
-        }
-        Err(_) => TemporaryChannelData::new(channel_id, interaction.user.id),
-    };
-
-    channel_data.save(ctx).await;
+    row.owner_id = interaction.user.id;
+    row.save::<Db, Manager>(pool).await?;
 
     channel_id
         .create_permission(
@@ -45,7 +41,7 @@ pub async fn claim<Manager: TemporaryVoiceChannelManager>(
     Ok(())
 }
 
-async fn is_claimable(ctx: &Context, owner: UserId, channel_id: ChannelId) -> bool {
+async fn is_claimable(ctx: &Context, channel_data: &VoiceChannelData) -> bool {
     let data = ctx.data.read().await;
 
     let owner_state = {
@@ -53,8 +49,8 @@ async fn is_claimable(ctx: &Context, owner: UserId, channel_id: ChannelId) -> bo
             .get::<VoiceStateCache>()
             .expect("Expected VoiceStateCache in TypeMap");
 
-        cache.get(&owner)
+        cache.get(&channel_data.owner_id)
     };
 
-    owner_state.and_then(|state| state.channel_id) == Some(channel_id)
+    owner_state.and_then(|state| state.channel_id) == Some(channel_data.id)
 }

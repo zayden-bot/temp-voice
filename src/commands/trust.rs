@@ -1,29 +1,34 @@
+use std::collections::HashMap;
+
 use serenity::all::{ChannelId, EditInteractionResponse};
 use serenity::all::{
     CommandInteraction, Context, PermissionOverwrite, PermissionOverwriteType, Permissions,
-    ResolvedOption, ResolvedValue,
+    ResolvedValue,
 };
-use zayden_core::parse_options;
+use sqlx::{Database, Pool};
 
-use crate::voice_channel_manager::TemporaryVoiceChannelManager;
-use crate::Error;
+use crate::error::PermissionError;
+use crate::{Error, VoiceChannelData, VoiceChannelManager};
 
-pub async fn trust<Manager: TemporaryVoiceChannelManager>(
+pub async fn trust<Db: Database, Manager: VoiceChannelManager<Db>>(
     ctx: &Context,
     interaction: &CommandInteraction,
-    options: &Vec<ResolvedOption<'_>>,
+    pool: &Pool<Db>,
+    mut options: HashMap<&str, &ResolvedValue<'_>>,
     channel_id: ChannelId,
+    mut row: VoiceChannelData,
 ) -> Result<(), Error> {
-    let options = parse_options(options);
+    if !row.is_owner(interaction.user.id) {
+        return Err(Error::MissingPermissions(PermissionError::NotOwner));
+    }
 
-    let user = match options.get("user") {
+    let user = match options.remove("user") {
         Some(ResolvedValue::User(user, _member)) => user,
         _ => unreachable!("User option is required"),
     };
 
-    let mut channel_data = Manager::take(ctx, channel_id).await?;
-    channel_data.trust(user.id);
-    channel_data.save(ctx).await;
+    row.trust(user.id);
+    row.save::<Db, Manager>(pool).await?;
 
     channel_id
         .create_permission(

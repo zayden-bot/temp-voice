@@ -43,20 +43,14 @@ use serenity::all::{
     CommandInteraction, CommandOptionType, Context, CreateCommand, CreateCommandOption,
     ResolvedValue,
 };
+use zayden_core::parse_options;
 
-use crate::{
-    error::PermissionError, get_voice_state, Error, PersistentVoiceChannelManager, Result,
-    TemporaryVoiceChannelManager,
-};
+use crate::{get_voice_state, Error, Result, VoiceChannelManager};
 
 pub struct VoiceCommand;
 
 impl VoiceCommand {
-    pub async fn run<
-        Db: Database,
-        TempManager: TemporaryVoiceChannelManager,
-        PersistentManager: PersistentVoiceChannelManager<Db>,
-    >(
+    pub async fn run<Db: Database, Manager: VoiceChannelManager<Db>>(
         ctx: &Context,
         interaction: &CommandInteraction,
         pool: &Pool<Db>,
@@ -65,150 +59,88 @@ impl VoiceCommand {
 
         let command = &interaction.data.options()[0];
 
-        let options = match &command.value {
-            ResolvedValue::SubCommand(options) => options,
+        let mut options = match &command.value {
+            ResolvedValue::SubCommand(options) => parse_options(options),
             _ => unreachable!("Subcommand is required"),
         };
 
+        if command.name == "create" {
+            create::<Db, Manager>(ctx, interaction, pool, guild_id, options).await?;
+            return Ok(());
+        }
+
+        let channel_id = match options.remove("channel") {
+            Some(ResolvedValue::Channel(channel)) => channel.id,
+            _ => get_voice_state(ctx, guild_id, interaction.user.id)
+                .await?
+                .channel_id
+                .ok_or(Error::MemberNotInVoiceChannel)?,
+        };
+
+        let row = Manager::get(pool, channel_id).await?;
+
         match command.name {
-            "create" => {
-                create::<TempManager>(ctx, interaction, guild_id, options).await?;
-                return Ok(());
-            }
             "join" => {
-                join::<TempManager>(ctx, interaction, options, guild_id).await?;
-                return Ok(());
+                join(ctx, interaction, options, guild_id, channel_id, &row).await?;
             }
-            _ => {}
-        }
-
-        let channel_id = get_voice_state(ctx, guild_id, interaction.user.id)
-            .await
-            .ok()
-            .and_then(|state| state.channel_id);
-
-        if command.name == "persist" {
-            persist::<Db, TempManager, PersistentManager>(
-                ctx,
-                interaction,
-                pool,
-                options,
-                channel_id,
-            )
-            .await?;
-            return Ok(());
-        }
-
-        let channel_id = channel_id.ok_or(Error::MemberNotInVoiceChannel)?;
-
-        if command.name == "claim" {
-            claim::<TempManager>(ctx, interaction, channel_id).await?;
-            return Ok(());
-        }
-
-        let is_owner = TempManager::verify_owner(ctx, channel_id, interaction.user.id).await?;
-        let is_trusted =
-            is_owner || TempManager::verify_trusted(ctx, channel_id, interaction.user.id).await?;
-
-        let everyone_role = guild_id.everyone_role();
-
-        match command.name {
+            "persist" => {
+                persist::<Db, Manager>(ctx, interaction, pool, row).await?;
+            }
+            "claim" => {
+                claim::<Db, Manager>(ctx, interaction, pool, channel_id, row).await?;
+            }
             "name" => {
-                if !is_trusted {
-                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
-                }
-                name(ctx, interaction, options, channel_id).await?;
+                name(ctx, interaction, options, channel_id, &row).await?;
             }
             "limit" => {
-                if !is_trusted {
-                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
-                }
-                limit(ctx, interaction, options, channel_id).await?;
+                limit(ctx, interaction, options, channel_id, &row).await?;
             }
             "privacy" => {
-                if !is_trusted {
-                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
-                }
-                privacy(ctx, interaction, options, everyone_role, channel_id).await?;
+                privacy(ctx, interaction, options, guild_id, channel_id, &row).await?;
             }
             "waiting" => {
                 // waiting(ctx, interaction, guild_id, options).await?;
             }
             "trust" => {
-                if !is_trusted {
-                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
-                }
-                trust::<TempManager>(ctx, interaction, options, channel_id).await?;
+                trust::<Db, Manager>(ctx, interaction, pool, options, channel_id, row).await?;
             }
             "untrust" => {
-                if !is_trusted {
-                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
-                }
-                untrust::<TempManager>(ctx, interaction, options, channel_id).await?;
+                untrust::<Db, Manager>(ctx, interaction, pool, options, channel_id, row).await?;
             }
             "invite" => {
-                if !is_trusted {
-                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
-                }
-                invite::<TempManager>(ctx, interaction, options, channel_id).await?;
+                invite(ctx, interaction, options, channel_id, row).await?;
             }
             "kick" => {
-                if !is_trusted {
-                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
-                }
-                kick(ctx, interaction, options, guild_id).await?;
+                kick(ctx, interaction, options, guild_id, &row).await?;
             }
             "region" => {
-                if !is_trusted {
-                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
-                }
-                region(ctx, interaction, options, channel_id).await?;
+                region(ctx, interaction, options, channel_id, &row).await?;
             }
             "block" => {
-                if !is_trusted {
-                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
-                }
-                block::<TempManager>(ctx, interaction, options, guild_id, channel_id).await?;
+                block::<Db, Manager>(ctx, interaction, pool, options, guild_id, channel_id, row)
+                    .await?;
             }
             "unblock" => {
-                if !is_trusted {
-                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
-                }
-                unblock(ctx, interaction, options, channel_id).await?;
+                unblock(ctx, interaction, options, channel_id, &row).await?;
             }
             "delete" => {
-                if !is_trusted {
-                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
-                }
-                delete(ctx, interaction, channel_id).await?;
+                delete::<Db, Manager>(ctx, interaction, pool, channel_id, row).await?;
             }
             "bitrate" => {
-                if !is_trusted {
-                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
-                }
-                bitrate(ctx, interaction, options, channel_id).await?;
+                bitrate(ctx, interaction, options, channel_id, &row).await?;
             }
             "info" => {
                 // info(ctx, interaction, guild_id, options).await?;
             }
             "password" => {
-                if !is_trusted {
-                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
-                }
-                password::<TempManager>(ctx, interaction, options, channel_id, everyone_role)
+                password::<Db, Manager>(ctx, interaction, pool, options, guild_id, channel_id, row)
                     .await?;
             }
             "reset" => {
-                if !is_trusted {
-                    return Err(Error::MissingPermissions(PermissionError::NotTrusted));
-                }
-                reset::<TempManager>(ctx, interaction, guild_id, channel_id).await?;
+                reset::<Db, Manager>(ctx, interaction, pool, guild_id, channel_id, row).await?;
             }
             "transfer" => {
-                if !is_owner {
-                    return Err(Error::MissingPermissions(PermissionError::NotOwner));
-                }
-                transfer::<TempManager>(ctx, interaction, options, channel_id).await?;
+                transfer::<Db, Manager>(ctx, interaction, pool, options, channel_id, row).await?;
             }
             _ => unreachable!("Invalid subcommand name"),
         };

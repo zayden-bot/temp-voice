@@ -1,27 +1,33 @@
+use std::collections::HashMap;
+
 use serenity::all::{
     ChannelId, CommandInteraction, Context, EditInteractionResponse, PermissionOverwriteType,
-    ResolvedOption, ResolvedValue,
+    ResolvedValue,
 };
-use zayden_core::parse_options;
+use sqlx::{Database, Pool};
 
-use crate::{Error, TemporaryVoiceChannelManager};
+use crate::error::PermissionError;
+use crate::{Error, VoiceChannelData, VoiceChannelManager};
 
-pub async fn untrust<Manager: TemporaryVoiceChannelManager>(
+pub async fn untrust<Db: Database, Manager: VoiceChannelManager<Db>>(
     ctx: &Context,
     interaction: &CommandInteraction,
-    options: &Vec<ResolvedOption<'_>>,
+    pool: &Pool<Db>,
+    mut options: HashMap<&str, &ResolvedValue<'_>>,
     channel_id: ChannelId,
+    mut row: VoiceChannelData,
 ) -> Result<(), Error> {
-    let options = parse_options(options);
+    if !row.is_owner(interaction.user.id) {
+        return Err(Error::MissingPermissions(PermissionError::NotOwner));
+    }
 
-    let user = match options.get("user") {
+    let user = match options.remove("user") {
         Some(ResolvedValue::User(user, _member)) => user,
         _ => unreachable!("User option is required"),
     };
 
-    let mut channel_data = Manager::take(ctx, channel_id).await?;
-    channel_data.untrust(user.id);
-    channel_data.save(ctx).await;
+    row.untrust(user.id);
+    row.save::<Db, Manager>(pool).await?;
 
     channel_id
         .delete_permission(ctx, PermissionOverwriteType::Member(user.id))

@@ -1,20 +1,25 @@
+use std::collections::HashMap;
+
 use serenity::all::{
     ChannelId, CommandInteraction, Context, EditInteractionResponse, PermissionOverwriteType,
-    ResolvedOption, ResolvedValue,
+    ResolvedValue,
 };
-use zayden_core::parse_options;
 
-use crate::Error;
+use crate::error::PermissionError;
+use crate::{Error, VoiceChannelData};
 
 pub async fn unblock(
     ctx: &Context,
     interaction: &CommandInteraction,
-    options: &Vec<ResolvedOption<'_>>,
+    mut options: HashMap<&str, &ResolvedValue<'_>>,
     channel_id: ChannelId,
+    row: &VoiceChannelData,
 ) -> Result<(), Error> {
-    let options = parse_options(options);
+    if !row.is_trusted(interaction.user.id) {
+        return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+    }
 
-    let user = match options.get("user") {
+    let user = match options.remove("user") {
         Some(ResolvedValue::User(user, _member)) => user,
         _ => unreachable!("User option is required"),
     };

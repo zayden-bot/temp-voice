@@ -1,37 +1,31 @@
+use std::collections::HashMap;
+
 use serenity::all::{
-    CommandInteraction, Context, GuildId, PermissionOverwrite, PermissionOverwriteType, Permissions,
+    ChannelId, CommandInteraction, Context, GuildId, PermissionOverwrite, PermissionOverwriteType,
+    Permissions,
 };
-use serenity::all::{EditInteractionResponse, ResolvedOption, ResolvedValue};
-use zayden_core::parse_options;
+use serenity::all::{EditInteractionResponse, ResolvedValue};
 
-use crate::{Error, Result, TemporaryVoiceChannelManager};
+use crate::{Error, Result, VoiceChannelData};
 
-pub async fn join<Manager: TemporaryVoiceChannelManager>(
+pub async fn join(
     ctx: &Context,
     interaction: &CommandInteraction,
-    options: &Vec<ResolvedOption<'_>>,
+    mut options: HashMap<&str, &ResolvedValue<'_>>,
     guild_id: GuildId,
+    channel_id: ChannelId,
+    row: &VoiceChannelData,
 ) -> Result<()> {
-    let options = parse_options(options);
-
-    let channel = match options.get("channel") {
-        Some(ResolvedValue::Channel(channel)) => *channel,
-        _ => unreachable!("Channel option is required"),
-    };
-
-    let pass = match options.get("pass") {
-        Some(ResolvedValue::String(pass)) => *pass,
+    let pass = match options.remove("pass") {
+        Some(ResolvedValue::String(pass)) => pass,
         _ => unreachable!("Password option is required"),
     };
 
-    let is_valid = Manager::verify_password(ctx, channel.id, pass).await?;
-
-    if !is_valid {
+    if !row.verify_password(pass) {
         return Err(Error::InvalidPassword);
     }
 
-    channel
-        .id
+    channel_id
         .create_permission(
             ctx,
             PermissionOverwrite {
@@ -43,7 +37,7 @@ pub async fn join<Manager: TemporaryVoiceChannelManager>(
         .await?;
 
     guild_id
-        .move_member(ctx, interaction.user.id, channel.id)
+        .move_member(ctx, interaction.user.id, channel_id)
         .await?;
 
     interaction

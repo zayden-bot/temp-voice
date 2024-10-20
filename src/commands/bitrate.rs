@@ -1,20 +1,24 @@
-use serenity::all::{
-    ChannelId, CommandInteraction, Context, EditChannel, EditInteractionResponse, ResolvedOption,
-    ResolvedValue,
-};
-use zayden_core::parse_options;
+use std::collections::HashMap;
 
-use crate::Error;
+use serenity::all::{
+    ChannelId, CommandInteraction, Context, EditChannel, EditInteractionResponse, ResolvedValue,
+};
+
+use crate::error::PermissionError;
+use crate::{Error, VoiceChannelData};
 
 pub async fn bitrate(
     ctx: &Context,
     interaction: &CommandInteraction,
-    options: &Vec<ResolvedOption<'_>>,
+    mut options: HashMap<&str, &ResolvedValue<'_>>,
     channel_id: ChannelId,
+    row: &VoiceChannelData,
 ) -> Result<(), Error> {
-    let options = parse_options(options);
+    if !row.is_trusted(interaction.user.id) {
+        return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+    }
 
-    let kbps = match options.get("kbps") {
+    let kbps = match options.remove("kbps") {
         Some(ResolvedValue::Integer(kbps)) => *kbps as u32,
         _ => unreachable!("Kbps option is required"),
     };

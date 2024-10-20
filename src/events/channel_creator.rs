@@ -2,13 +2,15 @@ use serenity::all::{
     ChannelId, ChannelType, Context, CreateChannel, PermissionOverwrite, PermissionOverwriteType,
     Permissions, VoiceState,
 };
+use sqlx::{Database, Pool};
 
-use crate::{Result, TemporaryVoiceChannelManager};
+use crate::{Result, VoiceChannelData, VoiceChannelManager};
 
 const CHANNEL_ID: ChannelId = ChannelId::new(1289436847688253550);
 
-pub async fn channel_creator<Manager: TemporaryVoiceChannelManager>(
+pub async fn channel_creator<Db: Database, Manager: VoiceChannelManager<Db>>(
     ctx: &Context,
+    pool: &Pool<Db>,
     new: &VoiceState,
 ) -> Result<()> {
     let creator_channel_id = match new.channel_id {
@@ -42,7 +44,9 @@ pub async fn channel_creator<Manager: TemporaryVoiceChannelManager>(
         .permissions(perms);
 
     let vc = guild_id.create_channel(ctx, vc_builder).await?;
-    Manager::register_voice_channel(ctx, vc.id, new.user_id).await;
+
+    let row = VoiceChannelData::new(vc.id, new.user_id);
+    row.save::<Db, Manager>(pool).await?;
 
     guild_id.move_member(ctx, member.user.id, vc.id).await?;
 

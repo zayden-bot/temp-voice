@@ -1,20 +1,24 @@
-use serenity::all::{
-    ChannelId, CommandInteraction, Context, EditChannel, EditInteractionResponse, ResolvedOption,
-    ResolvedValue,
-};
-use zayden_core::parse_options;
+use std::collections::HashMap;
 
-use crate::Error;
+use serenity::all::{
+    ChannelId, CommandInteraction, Context, EditChannel, EditInteractionResponse, ResolvedValue,
+};
+
+use crate::error::PermissionError;
+use crate::{Error, VoiceChannelData};
 
 pub async fn name(
     ctx: &Context,
     interaction: &CommandInteraction,
-    options: &Vec<ResolvedOption<'_>>,
+    mut options: HashMap<&str, &ResolvedValue<'_>>,
     channel_id: ChannelId,
+    row: &VoiceChannelData,
 ) -> Result<(), Error> {
-    let options = parse_options(options);
+    if !row.is_trusted(interaction.user.id) {
+        return Err(Error::MissingPermissions(PermissionError::NotTrusted));
+    }
 
-    let name = match options.get("name") {
+    let name = match options.remove("name") {
         Some(ResolvedValue::String(name)) => name.to_string(),
         _ => format!("{}'s Channel", interaction.user.name),
     };

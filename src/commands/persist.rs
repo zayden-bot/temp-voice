@@ -1,39 +1,25 @@
-use serenity::all::{
-    ChannelId, CommandInteraction, Context, EditInteractionResponse, ResolvedOption, ResolvedValue,
-};
+use serenity::all::{CommandInteraction, Context, EditInteractionResponse};
 use sqlx::{Database, Pool};
-use zayden_core::parse_options;
 
-use crate::{Error, PersistentVoiceChannelManager, TemporaryVoiceChannelManager};
+use crate::error::PermissionError;
+use crate::{Error, Result, VoiceChannelData, VoiceChannelManager};
 
-pub async fn persist<
-    Db: Database,
-    TempManager: TemporaryVoiceChannelManager,
-    PersistentManager: PersistentVoiceChannelManager<Db>,
->(
+pub async fn persist<Db: Database, Manager: VoiceChannelManager<Db>>(
     ctx: &Context,
     interaction: &CommandInteraction,
     pool: &Pool<Db>,
-    options: &Vec<ResolvedOption<'_>>,
-    channel_id: Option<ChannelId>,
-) -> Result<(), Error> {
+    mut row: VoiceChannelData,
+) -> Result<()> {
+    if interaction.user.id != row.owner_id {
+        return Err(Error::MissingPermissions(PermissionError::NotOwner));
+    }
+
     if interaction.member.as_ref().unwrap().premium_since.is_none() {
         return Err(Error::PremiumRequired);
     }
 
-    let options = parse_options(options);
-
-    let channel_id = match (options.get("channel"), channel_id) {
-        (Some(ResolvedValue::Channel(channel)), _) => channel.id,
-        (_, Some(channel_id)) => channel_id,
-        _ => return Err(Error::MemberNotInVoiceChannel),
-    };
-
-    let channel_data = TempManager::take(ctx, channel_id).await?;
-
-    PersistentManager::persist(pool, &channel_data).await?;
-
-    channel_data.save(ctx).await;
+    row.toggle_persist();
+    row.save::<Db, Manager>(pool).await?;
 
     interaction
         .edit_response(
