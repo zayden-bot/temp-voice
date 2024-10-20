@@ -13,7 +13,9 @@ use serenity::prelude::TypeMapKey;
 pub use commands::VoiceCommand;
 pub use error::Error;
 use error::Result;
-pub use voice_channel_manager::VoiceChannelManager;
+pub use voice_channel_manager::{
+    PersistentVoiceChannelManager, TemporaryVoiceChannelManager, VoiceChannelData, VoiceChannelMap,
+};
 
 pub struct CachedState {
     pub channel_id: Option<ChannelId>,
