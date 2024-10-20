@@ -53,13 +53,12 @@ pub struct VoiceCommand;
 
 impl VoiceCommand {
     pub async fn run<
-        Db: Database,
         TempManager: TemporaryVoiceChannelManager,
         PersistentManager: PersistentVoiceChannelManager,
     >(
         ctx: &Context,
         interaction: &CommandInteraction,
-        pool: &Pool<Db>,
+        pool: &Pool<impl Database>,
     ) -> Result<()> {
         let guild_id = interaction.guild_id.ok_or(Error::CommandNotInGuild)?;
 
