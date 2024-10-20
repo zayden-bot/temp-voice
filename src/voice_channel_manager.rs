@@ -83,10 +83,10 @@ impl TypeMapKey for VoiceChannelMap {
 }
 
 pub struct TemporaryChannelData {
-    channel_id: ChannelId,
+    pub channel_id: ChannelId,
     pub owner: UserId,
-    trusted: HashSet<UserId>,
-    open_invites: HashSet<UserId>,
+    pub trusted: HashSet<UserId>,
+    pub open_invites: HashSet<UserId>,
     pub password: Option<String>,
 }
 
