@@ -7,12 +7,13 @@ use zayden_core::parse_options;
 use crate::{Error, PersistentVoiceChannelManager, TemporaryVoiceChannelManager};
 
 pub async fn persist<
+    Db: Database,
     TempManager: TemporaryVoiceChannelManager,
-    PersistentManager: PersistentVoiceChannelManager,
+    PersistentManager: PersistentVoiceChannelManager<Db>,
 >(
     ctx: &Context,
     interaction: &CommandInteraction,
-    pool: &Pool<impl Database>,
+    pool: &Pool<Db>,
     options: &Vec<ResolvedOption<'_>>,
     channel_id: Option<ChannelId>,
 ) -> Result<(), Error> {

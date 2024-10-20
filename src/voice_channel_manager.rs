@@ -134,13 +134,12 @@ impl TemporaryChannelData {
 }
 
 #[async_trait]
-pub trait PersistentVoiceChannelManager {
+pub trait PersistentVoiceChannelManager<Db: Database> {
     async fn persist(
-        pool: &Pool<impl Database>,
+        pool: &Pool<Db>,
         channel_data: &TemporaryChannelData,
     ) -> sqlx::Result<AnyQueryResult>;
-    async fn is_persistent(pool: &Pool<impl Database>, channel_id: ChannelId)
-        -> sqlx::Result<bool>;
+    async fn is_persistent(pool: &Pool<Db>, channel_id: ChannelId) -> sqlx::Result<bool>;
 }
 
 pub struct PersistentChannelData {

@@ -53,12 +53,13 @@ pub struct VoiceCommand;
 
 impl VoiceCommand {
     pub async fn run<
+        Db: Database,
         TempManager: TemporaryVoiceChannelManager,
-        PersistentManager: PersistentVoiceChannelManager,
+        PersistentManager: PersistentVoiceChannelManager<Db>,
     >(
         ctx: &Context,
         interaction: &CommandInteraction,
-        pool: &Pool<impl Database>,
+        pool: &Pool<Db>,
     ) -> Result<()> {
         let guild_id = interaction.guild_id.ok_or(Error::CommandNotInGuild)?;
 
@@ -87,8 +88,14 @@ impl VoiceCommand {
             .and_then(|state| state.channel_id);
 
         if command.name == "persist" {
-            persist::<TempManager, PersistentManager>(ctx, interaction, pool, options, channel_id)
-                .await?;
+            persist::<Db, TempManager, PersistentManager>(
+                ctx,
+                interaction,
+                pool,
+                options,
+                channel_id,
+            )
+            .await?;
             return Ok(());
         }
 

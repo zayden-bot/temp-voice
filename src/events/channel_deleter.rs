@@ -10,11 +10,12 @@ const CATEGORY_ID: ChannelId = ChannelId::new(923679215205892098);
 const CREATOR_CHANNEL_ID: ChannelId = ChannelId::new(1289436847688253550);
 
 pub async fn channel_deleter<
+    Db: Database,
     TempManager: TemporaryVoiceChannelManager,
-    PersistentManager: PersistentVoiceChannelManager,
+    PersistentManager: PersistentVoiceChannelManager<Db>,
 >(
     ctx: &Context,
-    pool: &Pool<impl Database>,
+    pool: &Pool<Db>,
     old: Option<CachedState>,
 ) -> Result<()> {
     let old = match old {
