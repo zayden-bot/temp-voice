@@ -45,10 +45,10 @@ pub async fn channel_creator<Db: Database, Manager: VoiceChannelManager<Db>>(
 
     let vc = guild_id.create_channel(ctx, vc_builder).await?;
 
+    guild_id.move_member(ctx, member.user.id, vc.id).await?;
+
     let row = VoiceChannelData::new(vc.id, new.user_id);
     row.save::<Db, Manager>(pool).await?;
-
-    guild_id.move_member(ctx, member.user.id, vc.id).await?;
 
     Ok(())
 }
