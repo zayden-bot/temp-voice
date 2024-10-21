@@ -14,9 +14,9 @@ pub async fn persist<Db: Database, Manager: VoiceChannelManager<Db>>(
         return Err(Error::MissingPermissions(PermissionError::NotOwner));
     }
 
-    if interaction.member.as_ref().unwrap().premium_since.is_none() {
-        return Err(Error::PremiumRequired);
-    }
+    // if interaction.member.as_ref().unwrap().premium_since.is_none() {
+    //     return Err(Error::PremiumRequired);
+    // }
 
     row.toggle_persist();
     row.save::<Db, Manager>(pool).await?;
