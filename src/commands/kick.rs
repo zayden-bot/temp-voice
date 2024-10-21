@@ -12,7 +12,7 @@ pub async fn kick(
     guild_id: GuildId,
     row: &VoiceChannelData,
 ) -> Result<(), Error> {
-    if !row.is_trusted(interaction.user.id) {
+    if row.is_trusted(interaction.user.id) {
         return Err(Error::MissingPermissions(PermissionError::NotTrusted));
     }
 
