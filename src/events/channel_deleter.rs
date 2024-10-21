@@ -21,7 +21,11 @@ pub async fn channel_deleter<Db: Database, Manager: VoiceChannelManager<Db>>(
         _ => return Ok(()),
     };
 
-    let row = Manager::get(pool, channel_id).await?;
+    let row = match Manager::get(pool, channel_id).await {
+        Ok(row) => row,
+        Err(sqlx::Error::RowNotFound) => return Ok(()),
+        Err(e) => return Err(e.into()),
+    };
 
     if row.is_persistent() {
         return Ok(());
