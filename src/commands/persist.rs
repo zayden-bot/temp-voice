@@ -19,12 +19,19 @@ pub async fn persist<Db: Database, Manager: VoiceChannelManager<Db>>(
     // }
 
     row.toggle_persist();
+    let state = if row.is_persistent() {
+        "enabled"
+    } else {
+        "disabled"
+    };
+
     row.save::<Db, Manager>(pool).await?;
 
     interaction
         .edit_response(
             ctx,
-            EditInteractionResponse::new().content("Set user to blocked."),
+            EditInteractionResponse::new()
+                .content(format!("Channel persistence is now {}.", state)),
         )
         .await?;
 
