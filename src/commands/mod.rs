@@ -77,7 +77,18 @@ impl VoiceCommand {
                 .ok_or(Error::MemberNotInVoiceChannel)?,
         };
 
-        let row = Manager::get(pool, channel_id).await?;
+        let row = match Manager::get(pool, channel_id).await {
+            Ok(row) => Some(row),
+            Err(sqlx::Error::RowNotFound) => None,
+            Err(err) => return Err(err.into()),
+        };
+
+        if command.name == "claim" {
+            claim::<Db, Manager>(ctx, interaction, pool, channel_id, row).await?;
+            return Ok(());
+        }
+
+        let row = row.ok_or(sqlx::Error::RowNotFound)?;
 
         match command.name {
             "join" => {
@@ -85,9 +96,6 @@ impl VoiceCommand {
             }
             "persist" => {
                 persist::<Db, Manager>(ctx, interaction, pool, row).await?;
-            }
-            "claim" => {
-                claim::<Db, Manager>(ctx, interaction, pool, channel_id, row).await?;
             }
             "name" => {
                 name(ctx, interaction, options, channel_id, &row).await?;

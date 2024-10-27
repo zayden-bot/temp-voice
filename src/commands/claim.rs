@@ -11,8 +11,13 @@ pub async fn claim<Db: Database, Manager: VoiceChannelManager<Db>>(
     interaction: &CommandInteraction,
     pool: &Pool<Db>,
     channel_id: ChannelId,
-    mut row: VoiceChannelData,
+    row: Option<VoiceChannelData>,
 ) -> Result<(), Error> {
+    let mut row = match row {
+        Some(row) => row,
+        None => VoiceChannelData::new(channel_id, interaction.user.id),
+    };
+
     if row.is_owner(interaction.user.id) {
         return Err(Error::UserIsOwner);
     }
