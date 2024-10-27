@@ -31,8 +31,6 @@ pub async fn channel_deleter<Db: Database, Manager: VoiceChannelManager<Db>>(
         return Ok(());
     }
 
-    row.delete::<Db, Manager>(pool).await?;
-
     let channel = match channel_id.to_channel(ctx).await {
         Ok(channel) => channel,
         Err(serenity::Error::Http(HttpError::UnsuccessfulRequest(ErrorResponse {
@@ -68,6 +66,8 @@ pub async fn channel_deleter<Db: Database, Manager: VoiceChannelManager<Db>>(
     };
 
     if users == 0 {
+        row.delete::<Db, Manager>(pool).await?;
+
         match channel_id.delete(ctx).await {
             Ok(_) => {}
             Err(serenity::Error::Http(HttpError::UnsuccessfulRequest(ErrorResponse {
