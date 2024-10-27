@@ -16,6 +16,7 @@ pub enum Error {
     OwnerInChannel,
     InvalidPassword,
     PremiumRequired,
+    UserIsOwner,
     MissingPermissions(PermissionError),
     ChannelNotFound(ChannelId),
 
@@ -35,6 +36,7 @@ impl ErrorResponse for Error {
             }
             Error::InvalidPassword => String::from("Invalid password."),
             Error::PremiumRequired => String::from("Only Server Boosters can use this command."),
+            Error::UserIsOwner => String::from("You are already the owner of this channel."),
             Error::MissingPermissions(PermissionError::NotOwner) => {
                 String::from("Only the channel owner can use this command.")
             }

@@ -13,6 +13,10 @@ pub async fn claim<Db: Database, Manager: VoiceChannelManager<Db>>(
     channel_id: ChannelId,
     mut row: VoiceChannelData,
 ) -> Result<(), Error> {
+    if row.is_owner(interaction.user.id) {
+        return Err(Error::UserIsOwner);
+    }
+
     if !row.is_persistent() && is_claimable(ctx, &row).await {
         return Err(Error::OwnerInChannel);
     }
