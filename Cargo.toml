@@ -4,14 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+zayden-core = { git = "https://github.com/zayden-bot/slash-command-core.git", branch = "master" }
 async-trait = { version = "*", default-features = false }
 sqlx = { version = "*", default-features = false, features = ["any", "macros"] }
 tokio = { version = "*", default-features = false }
-zayden-core = { git = "https://github.com/zayden-bot/slash-command-core.git", branch = "master" }
 
 [dependencies.serenity]
-git = "https://github.com/serenity-rs/serenity"
-branch = "current"
-# version = "*"
+version = "*"
 default-features = false
 features = ["rustls_backend", "builder", "client", "gateway", "model"]
