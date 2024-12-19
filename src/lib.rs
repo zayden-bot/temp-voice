@@ -1,6 +1,7 @@
 pub mod commands;
 mod error;
 pub mod events;
+pub mod guild_manager;
 pub mod voice_channel_manager;
 
 use std::collections::HashMap;
@@ -13,6 +14,7 @@ use serenity::prelude::TypeMapKey;
 pub use commands::VoiceCommand;
 pub use error::Error;
 use error::Result;
+pub use guild_manager::TempVoiceGuildManager;
 pub use voice_channel_manager::{VoiceChannelData, VoiceChannelManager};
 
 pub struct CachedState {

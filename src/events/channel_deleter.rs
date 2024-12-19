@@ -1,12 +1,13 @@
-use serenity::all::{ChannelId, Context, DiscordJsonError, ErrorResponse, HttpError};
+use serenity::all::{Context, DiscordJsonError, ErrorResponse, HttpError};
 use sqlx::{Database, Pool};
 
-use crate::{CachedState, Result, VoiceChannelManager, VoiceStateCache};
+use crate::{CachedState, Result, TempVoiceGuildManager, VoiceChannelManager, VoiceStateCache};
 
-const CATEGORY_ID: ChannelId = ChannelId::new(923679215205892098);
-const CREATOR_CHANNEL_ID: ChannelId = ChannelId::new(1289436847688253550);
-
-pub async fn channel_deleter<Db: Database, Manager: VoiceChannelManager<Db>>(
+pub async fn channel_deleter<
+    Db: Database,
+    GuildManager: TempVoiceGuildManager<Db>,
+    ChannelManager: VoiceChannelManager<Db>,
+>(
     ctx: &Context,
     pool: &Pool<Db>,
     old: Option<CachedState>,
@@ -16,12 +17,18 @@ pub async fn channel_deleter<Db: Database, Manager: VoiceChannelManager<Db>>(
         None => return Ok(()),
     };
 
+    let guild_id = old
+        .guild_id
+        .expect("Should be in a guild as voice channels are guild only");
+
+    let guild_data = GuildManager::get(pool, guild_id).await?;
+
     let channel_id = match old.channel_id {
-        Some(channel_id) if channel_id != CREATOR_CHANNEL_ID => channel_id,
+        Some(channel_id) if channel_id != guild_data.creator_channel() => channel_id,
         _ => return Ok(()),
     };
 
-    let row = match Manager::get(pool, channel_id).await {
+    let row = match ChannelManager::get(pool, channel_id).await {
         Ok(row) => row,
         Err(sqlx::Error::RowNotFound) => return Ok(()),
         Err(e) => return Err(e.into()),
@@ -43,12 +50,14 @@ pub async fn channel_deleter<Db: Database, Manager: VoiceChannelManager<Db>>(
         Err(e) => return Err(e.into()),
     };
 
+    let category = guild_data.category();
+
     if channel
         .guild()
         .expect("Should be in a guild")
         .parent_id
         .expect("Should be in a category")
-        != CATEGORY_ID
+        != category
     {
         return Ok(());
     }
@@ -66,7 +75,7 @@ pub async fn channel_deleter<Db: Database, Manager: VoiceChannelManager<Db>>(
     };
 
     if users == 0 {
-        row.delete::<Db, Manager>(pool).await?;
+        row.delete::<Db, ChannelManager>(pool).await?;
 
         match channel_id.delete(ctx).await {
             Ok(_) => {}

@@ -3,18 +3,20 @@ use std::time::Duration;
 
 use serenity::all::EditInteractionResponse;
 use serenity::all::{
-    ChannelId, ChannelType, Context, CreateChannel, GuildId, PermissionOverwrite,
-    PermissionOverwriteType, Permissions, ResolvedValue,
+    ChannelType, Context, CreateChannel, GuildId, PermissionOverwrite, PermissionOverwriteType,
+    Permissions, ResolvedValue,
 };
 use sqlx::{Database, Pool};
 
-use crate::{Error, VoiceChannelData, VoiceChannelManager};
+use crate::{Error, TempVoiceGuildManager, VoiceChannelData, VoiceChannelManager};
 
 use crate::get_voice_state;
 
-const CATEGORY_ID: ChannelId = ChannelId::new(923679215205892098);
-
-pub async fn create<Db: Database, Manager: VoiceChannelManager<Db>>(
+pub async fn create<
+    Db: Database,
+    GuildManager: TempVoiceGuildManager<Db>,
+    ChannelManager: VoiceChannelManager<Db>,
+>(
     ctx: &Context,
     interaction: &serenity::all::CommandInteraction,
     pool: &Pool<Db>,
@@ -66,16 +68,18 @@ pub async fn create<Db: Database, Manager: VoiceChannelManager<Db>>(
         _ => unreachable!("Invalid privacy option"),
     };
 
+    let category = GuildManager::get_category(pool, guild_id).await?;
+
     let vc_builder = CreateChannel::new(name)
         .kind(ChannelType::Voice)
-        .category(CATEGORY_ID)
+        .category(category)
         .user_limit(limit)
         .permissions(perms);
 
     let vc = guild_id.create_channel(ctx, vc_builder).await?;
 
     let row = VoiceChannelData::new(vc.id, interaction.user.id);
-    row.save::<Db, Manager>(pool).await?;
+    row.save::<Db, ChannelManager>(pool).await?;
 
     let move_result = guild_id.move_member(ctx, interaction.user.id, vc.id).await;
 
