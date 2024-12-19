@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use serenity::all::{
-    CommandInteraction, Context, CreateChannel, EditInteractionResponse, GuildId, ResolvedValue,
+    ChannelType, CommandInteraction, Context, CreateChannel, EditInteractionResponse, GuildId,
+    ResolvedValue,
 };
 use sqlx::{Database, Pool};
 
@@ -42,7 +43,9 @@ pub async fn setup<Db: Database, Manager: TempVoiceGuildManager<Db>>(
     let creator_channel = guild_id
         .create_channel(
             ctx,
-            CreateChannel::new("➕ Creator Channel").category(category.id),
+            CreateChannel::new("➕ Creator Channel")
+                .category(category.id)
+                .kind(ChannelType::Voice),
         )
         .await?;
 
