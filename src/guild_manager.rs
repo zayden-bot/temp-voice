@@ -21,21 +21,21 @@ pub trait TempVoiceGuildManager<Db: Database> {
 
 #[derive(FromRow)]
 pub struct TempVoiceRow {
-    pub guild_id: i64,
-    pub creator_channel: i64,
-    pub category: i64,
+    pub id: i64,
+    pub temp_voice_creator_channel: i64,
+    pub temp_voice_category: i64,
 }
 
 impl TempVoiceRow {
     pub fn guild_id(&self) -> GuildId {
-        GuildId::from(self.guild_id as u64)
+        GuildId::from(self.id as u64)
     }
 
     pub fn creator_channel(&self) -> ChannelId {
-        ChannelId::from(self.creator_channel as u64)
+        ChannelId::from(self.temp_voice_creator_channel as u64)
     }
 
     pub fn category(&self) -> ChannelId {
-        ChannelId::from(self.category as u64)
+        ChannelId::from(self.temp_voice_category as u64)
     }
 }

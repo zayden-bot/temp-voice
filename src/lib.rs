@@ -14,7 +14,7 @@ use serenity::prelude::TypeMapKey;
 pub use commands::VoiceCommand;
 pub use error::Error;
 use error::Result;
-pub use guild_manager::TempVoiceGuildManager;
+pub use guild_manager::{TempVoiceGuildManager, TempVoiceRow};
 pub use voice_channel_manager::{VoiceChannelData, VoiceChannelManager};
 
 pub struct CachedState {
