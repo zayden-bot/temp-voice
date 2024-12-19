@@ -199,8 +199,23 @@ impl VoiceCommand {
     }
 
     pub fn register() -> CreateCommand {
+        let setup = CreateCommandOption::new(
+            CommandOptionType::SubCommand,
+            "setup",
+            "Setup the temporary voice channel module for the guild.",
+        )
+        .add_sub_option(
+            CreateCommandOption::new(
+                CommandOptionType::Channel,
+                "category",
+                "The category to create temporary voice channels in.",
+            )
+            .required(true),
+        );
+
         CreateCommand::new("voice")
             .description("Commands for creating and managing temporary voice channels.")
+            .add_option(setup)
             .add_option(
                 CreateCommandOption::new(
                     CommandOptionType::SubCommand,

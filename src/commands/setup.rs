@@ -16,6 +16,24 @@ pub async fn setup<Db: Database, Manager: TempVoiceGuildManager<Db>>(
 ) -> Result<()> {
     interaction.defer_ephemeral(ctx).await?;
 
+    if !interaction
+        .member
+        .as_ref()
+        .unwrap()
+        .permissions
+        .unwrap()
+        .administrator()
+    {
+        interaction
+            .edit_response(
+                ctx,
+                EditInteractionResponse::new()
+                    .content("You must be an administrator to run this command."),
+            )
+            .await?;
+        return Ok(());
+    }
+
     let category = match options.remove("category") {
         Some(ResolvedValue::Channel(category)) => *category,
         _ => unreachable!("Category is required"),
