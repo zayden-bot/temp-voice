@@ -1,5 +1,5 @@
 use serenity::all::{
-    ChannelType, Context, CreateChannel, DiscordJsonError, ErrorResponse, HttpError,
+    ChannelType, Context, CreateChannel, CreateMessage, DiscordJsonError, ErrorResponse, HttpError,
     PermissionOverwrite, PermissionOverwriteType, Permissions, VoiceState,
 };
 use sqlx::{Database, Pool};
@@ -59,6 +59,15 @@ pub async fn channel_creator<
             error: DiscordJsonError { code: 40032, .. },
             ..
         }))) => {
+            member
+                .user
+                .direct_message(
+                    ctx,
+                    CreateMessage::new()
+                        .content("Voice channel created. You have 1 minute to join."),
+                )
+                .await?;
+
             if delete_voice_channel_if_inactive(ctx, guild_id, member.user.id, &vc).await? {
                 return Ok(());
             }
