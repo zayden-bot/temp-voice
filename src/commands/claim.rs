@@ -14,13 +14,15 @@ pub async fn claim<Db: Database, Manager: VoiceChannelManager<Db>>(
     row: Option<VoiceChannelData>,
 ) -> Result<(), Error> {
     let mut row = match row {
-        Some(row) => row,
+        Some(row) => {
+            if row.is_owner(interaction.user.id) {
+                return Err(Error::UserIsOwner);
+            }
+
+            row
+        }
         None => VoiceChannelData::new(channel_id, interaction.user.id),
     };
-
-    if row.is_owner(interaction.user.id) {
-        return Err(Error::UserIsOwner);
-    }
 
     if !row.is_persistent() && is_claimable(ctx, &row).await {
         return Err(Error::OwnerInChannel);
