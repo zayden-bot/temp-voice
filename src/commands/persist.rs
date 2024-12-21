@@ -10,13 +10,15 @@ pub async fn persist<Db: Database, Manager: VoiceChannelManager<Db>>(
     pool: &Pool<Db>,
     mut row: VoiceChannelData,
 ) -> Result<()> {
+    interaction.defer_ephemeral(ctx).await?;
+
     if interaction.user.id != row.owner_id {
         return Err(Error::MissingPermissions(PermissionError::NotOwner));
     }
 
-    // if interaction.member.as_ref().unwrap().premium_since.is_none() {
-    //     return Err(Error::PremiumRequired);
-    // }
+    if interaction.member.as_ref().unwrap().premium_since.is_none() {
+        return Err(Error::PremiumRequired);
+    }
 
     row.toggle_persist();
     let state = if row.is_persistent() {

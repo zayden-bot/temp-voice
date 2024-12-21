@@ -16,6 +16,8 @@ pub async fn privacy(
     channel_id: ChannelId,
     row: &VoiceChannelData,
 ) -> Result<(), Error> {
+    interaction.defer_ephemeral(ctx).await?;
+
     if !row.is_trusted(interaction.user.id) {
         return Err(Error::MissingPermissions(PermissionError::NotTrusted));
     }

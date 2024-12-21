@@ -18,6 +18,8 @@ pub async fn block<Db: Database, Manager: VoiceChannelManager<Db>>(
     channel_id: ChannelId,
     mut row: VoiceChannelData,
 ) -> Result<(), Error> {
+    interaction.defer_ephemeral(ctx).await?;
+
     if !row.is_trusted(interaction.user.id) {
         return Err(Error::MissingPermissions(PermissionError::NotTrusted));
     }

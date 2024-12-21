@@ -13,6 +13,8 @@ pub async fn claim<Db: Database, Manager: VoiceChannelManager<Db>>(
     channel_id: ChannelId,
     row: Option<VoiceChannelData>,
 ) -> Result<(), Error> {
+    interaction.defer_ephemeral(ctx).await?;
+
     let mut row = match row {
         Some(row) => {
             if row.is_owner(interaction.user.id) {

@@ -23,6 +23,8 @@ pub async fn create<
     guild_id: GuildId,
     mut options: HashMap<&str, &ResolvedValue<'_>>,
 ) -> Result<(), Error> {
+    interaction.defer_ephemeral(ctx).await?;
+
     let name = match options.remove("name") {
         Some(ResolvedValue::String(name)) => name.to_string(),
         _ => format!("{}'s Channel", interaction.user.name),

@@ -15,6 +15,8 @@ pub async fn invite(
     channel_id: ChannelId,
     mut row: VoiceChannelData,
 ) -> Result<(), Error> {
+    interaction.defer_ephemeral(ctx).await?;
+
     let user = match options.remove("user") {
         Some(ResolvedValue::User(user, _member)) => user,
         _ => unreachable!("User option is required"),

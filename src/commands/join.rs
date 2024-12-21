@@ -16,6 +16,8 @@ pub async fn join(
     channel_id: ChannelId,
     row: &VoiceChannelData,
 ) -> Result<()> {
+    interaction.defer_ephemeral(ctx).await?;
+
     let pass = match options.remove("pass") {
         Some(ResolvedValue::String(pass)) => pass,
         _ => unreachable!("Password option is required"),
