@@ -1,16 +1,16 @@
 use std::collections::HashMap;
-use std::time::Duration;
 
-use serenity::all::EditInteractionResponse;
 use serenity::all::{
     ChannelType, Context, CreateChannel, GuildId, PermissionOverwrite, PermissionOverwriteType,
     Permissions, ResolvedValue,
 };
+use serenity::all::{DiscordJsonError, EditInteractionResponse, ErrorResponse, HttpError};
 use sqlx::{Database, Pool};
 
-use crate::{Error, TempVoiceGuildManager, VoiceChannelData, VoiceChannelManager};
-
-use crate::get_voice_state;
+use crate::{
+    delete_voice_channel_if_inactive, Error, TempVoiceGuildManager, VoiceChannelData,
+    VoiceChannelManager,
+};
 
 pub async fn create<
     Db: Database,
@@ -78,9 +78,6 @@ pub async fn create<
 
     let vc = guild_id.create_channel(ctx, vc_builder).await?;
 
-    let row = VoiceChannelData::new(vc.id, interaction.user.id);
-    row.save::<Db, ChannelManager>(pool).await?;
-
     let move_result = guild_id.move_member(ctx, interaction.user.id, vc.id).await;
 
     let response_content = match move_result {
@@ -95,15 +92,19 @@ pub async fn create<
         )
         .await?;
 
-    if move_result.is_err() {
-        tokio::time::sleep(Duration::from_secs(60)).await;
-
-        let voice_state_result = get_voice_state(ctx, guild_id, interaction.user.id).await;
-
-        if voice_state_result.is_err() || voice_state_result.unwrap().channel_id != Some(vc.id) {
-            vc.delete(ctx).await?;
+    // Target user is not connected to voice.
+    if let Err(serenity::Error::Http(HttpError::UnsuccessfulRequest(ErrorResponse {
+        error: DiscordJsonError { code: 40032, .. },
+        ..
+    }))) = move_result
+    {
+        if delete_voice_channel_if_inactive(ctx, guild_id, interaction.user.id, &vc).await? {
+            return Ok(());
         }
     }
+
+    let row = VoiceChannelData::new(vc.id, interaction.user.id);
+    row.save::<Db, ChannelManager>(pool).await?;
 
     Ok(())
 }

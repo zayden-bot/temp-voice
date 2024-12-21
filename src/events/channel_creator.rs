@@ -1,10 +1,13 @@
 use serenity::all::{
-    ChannelType, Context, CreateChannel, PermissionOverwrite, PermissionOverwriteType, Permissions,
-    VoiceState,
+    ChannelType, Context, CreateChannel, DiscordJsonError, ErrorResponse, HttpError,
+    PermissionOverwrite, PermissionOverwriteType, Permissions, VoiceState,
 };
 use sqlx::{Database, Pool};
 
-use crate::{Result, TempVoiceGuildManager, VoiceChannelData, VoiceChannelManager};
+use crate::{
+    delete_voice_channel_if_inactive, Result, TempVoiceGuildManager, VoiceChannelData,
+    VoiceChannelManager,
+};
 
 pub async fn channel_creator<
     Db: Database,
@@ -49,7 +52,21 @@ pub async fn channel_creator<
 
     let vc = guild_id.create_channel(ctx, vc_builder).await?;
 
-    guild_id.move_member(ctx, member.user.id, vc.id).await?;
+    match guild_id.move_member(ctx, member.user.id, vc.id).await {
+        Ok(_) => {}
+        // Target user is not connected to voice.
+        Err(serenity::Error::Http(HttpError::UnsuccessfulRequest(ErrorResponse {
+            error: DiscordJsonError { code: 40032, .. },
+            ..
+        }))) => {
+            if delete_voice_channel_if_inactive(ctx, guild_id, member.user.id, &vc).await? {
+                return Ok(());
+            }
+        }
+        Err(e) => {
+            return Err(e.into());
+        }
+    };
 
     let row = VoiceChannelData::new(vc.id, new.user_id);
     row.save::<Db, ChannelManager>(pool).await?;
