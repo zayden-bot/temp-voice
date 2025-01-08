@@ -13,7 +13,7 @@ pub async fn claim<Db: Database, Manager: VoiceChannelManager<Db>>(
     channel_id: ChannelId,
     row: Option<VoiceChannelData>,
 ) -> Result<(), Error> {
-    interaction.defer_ephemeral(ctx).await?;
+    interaction.defer_ephemeral(ctx).await.unwrap();
 
     let mut row = match row {
         Some(row) => {
@@ -42,14 +42,16 @@ pub async fn claim<Db: Database, Manager: VoiceChannelManager<Db>>(
                 kind: PermissionOverwriteType::Member(interaction.user.id),
             },
         )
-        .await?;
+        .await
+        .unwrap();
 
     interaction
         .edit_response(
             ctx,
             EditInteractionResponse::new().content("Claimed channel."),
         )
-        .await?;
+        .await
+        .unwrap();
 
     Ok(())
 }

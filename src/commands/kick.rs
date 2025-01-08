@@ -12,7 +12,7 @@ pub async fn kick(
     guild_id: GuildId,
     row: &VoiceChannelData,
 ) -> Result<(), Error> {
-    interaction.defer_ephemeral(ctx).await?;
+    interaction.defer_ephemeral(ctx).await.unwrap();
 
     if !row.is_trusted(interaction.user.id) {
         return Err(Error::MissingPermissions(PermissionError::NotTrusted));
@@ -23,14 +23,14 @@ pub async fn kick(
         _ => unreachable!("Member option is required"),
     };
 
-    guild_id.disconnect_member(ctx, user).await?;
+    guild_id.disconnect_member(ctx, user).await.unwrap();
 
     interaction
         .edit_response(
             ctx,
             EditInteractionResponse::new().content("User kicked from channel."),
         )
-        .await?;
+        .await.unwrap();
 
     Ok(())
 }

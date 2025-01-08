@@ -18,7 +18,7 @@ pub async fn trust<Db: Database, Manager: VoiceChannelManager<Db>>(
     channel_id: ChannelId,
     mut row: VoiceChannelData,
 ) -> Result<(), Error> {
-    interaction.defer_ephemeral(ctx).await?;
+    interaction.defer_ephemeral(ctx).await.unwrap();
 
     if !row.is_owner(interaction.user.id) {
         return Err(Error::MissingPermissions(PermissionError::NotOwner));
@@ -44,14 +44,16 @@ pub async fn trust<Db: Database, Manager: VoiceChannelManager<Db>>(
                 kind: PermissionOverwriteType::Member(user.id),
             },
         )
-        .await?;
+        .await
+        .unwrap();
 
     interaction
         .edit_response(
             ctx,
             EditInteractionResponse::new().content("Set user to trusted."),
         )
-        .await?;
+        .await
+        .unwrap();
 
     Ok(())
 }

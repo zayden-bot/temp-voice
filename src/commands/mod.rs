@@ -94,7 +94,8 @@ impl VoiceCommand {
         let channel_id = match options.remove("channel") {
             Some(ResolvedValue::Channel(channel)) => channel.id,
             _ => get_voice_state(ctx, guild_id, interaction.user.id)
-                .await?
+                .await
+                .unwrap()
                 .channel_id
                 .ok_or(Error::MemberNotInVoiceChannel)?,
         };
@@ -102,7 +103,7 @@ impl VoiceCommand {
         let row = match ChannelManager::get(pool, channel_id).await {
             Ok(row) => Some(row),
             Err(sqlx::Error::RowNotFound) => None,
-            Err(err) => return Err(err.into()),
+            e => Some(e.unwrap()),
         };
 
         if command.name == "claim" {
@@ -110,7 +111,7 @@ impl VoiceCommand {
             return Ok(());
         }
 
-        let row = row.ok_or(sqlx::Error::RowNotFound)?;
+        let row = row.ok_or(sqlx::Error::RowNotFound).unwrap();
 
         match command.name {
             "join" => {

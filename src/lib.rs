@@ -30,7 +30,7 @@ impl CachedState {
         let user = if let Some(member) = state.member {
             member.user
         } else {
-            ctx.http.get_user(state.user_id).await?
+            ctx.http.get_user(state.user_id).await.unwrap()
         };
 
         Ok(Self {
@@ -89,7 +89,7 @@ pub async fn delete_voice_channel_if_inactive(
     match get_voice_state(ctx, guild_id, user_id).await {
         Ok(voice_state) if voice_state.channel_id == Some(vc.id) => Ok(false),
         _ => {
-            vc.delete(ctx).await?;
+            vc.delete(ctx).await.unwrap();
             Ok(true)
         }
     }

@@ -16,7 +16,7 @@ pub async fn privacy(
     channel_id: ChannelId,
     row: &VoiceChannelData,
 ) -> Result<(), Error> {
-    interaction.defer_ephemeral(ctx).await?;
+    interaction.defer_ephemeral(ctx).await.unwrap();
 
     if !row.is_trusted(interaction.user.id) {
         return Err(Error::MissingPermissions(PermissionError::NotTrusted));
@@ -53,14 +53,15 @@ pub async fn privacy(
         _ => unreachable!("Invalid privacy option"),
     };
 
-    channel_id.create_permission(ctx, perm).await?;
+    channel_id.create_permission(ctx, perm).await.unwrap();
 
     interaction
         .edit_response(
             ctx,
             EditInteractionResponse::new().content("Channel privacy updated."),
         )
-        .await?;
+        .await
+        .unwrap();
 
     Ok(())
 }

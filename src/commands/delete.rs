@@ -11,7 +11,7 @@ pub async fn delete<Db: Database, Manager: VoiceChannelManager<Db>>(
     channel_id: ChannelId,
     row: VoiceChannelData,
 ) -> Result<(), Error> {
-    interaction.defer_ephemeral(ctx).await?;
+    interaction.defer_ephemeral(ctx).await.unwrap();
 
     if row.is_owner(interaction.user.id) {
         return Err(Error::MissingPermissions(PermissionError::NotOwner));
@@ -19,14 +19,15 @@ pub async fn delete<Db: Database, Manager: VoiceChannelManager<Db>>(
 
     row.delete::<Db, Manager>(pool).await?;
 
-    channel_id.delete(ctx).await?;
+    channel_id.delete(ctx).await.unwrap();
 
     interaction
         .edit_response(
             ctx,
             EditInteractionResponse::new().content("Channel deleted."),
         )
-        .await?;
+        .await
+        .unwrap();
 
     Ok(())
 }

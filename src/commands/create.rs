@@ -23,7 +23,7 @@ pub async fn create<
     guild_id: GuildId,
     mut options: HashMap<&str, &ResolvedValue<'_>>,
 ) -> Result<(), Error> {
-    interaction.defer_ephemeral(ctx).await?;
+    interaction.defer_ephemeral(ctx).await.unwrap();
 
     let name = match options.remove("name") {
         Some(ResolvedValue::String(name)) => name.to_string(),
@@ -70,7 +70,7 @@ pub async fn create<
         _ => unreachable!("Invalid privacy option"),
     };
 
-    let category = GuildManager::get_category(pool, guild_id).await?;
+    let category = GuildManager::get_category(pool, guild_id).await.unwrap();
 
     let vc_builder = CreateChannel::new(name)
         .kind(ChannelType::Voice)
@@ -78,7 +78,7 @@ pub async fn create<
         .user_limit(limit)
         .permissions(perms);
 
-    let vc = guild_id.create_channel(ctx, vc_builder).await?;
+    let vc = guild_id.create_channel(ctx, vc_builder).await.unwrap();
 
     let move_result = guild_id.move_member(ctx, interaction.user.id, vc.id).await;
 
@@ -92,7 +92,8 @@ pub async fn create<
             ctx,
             EditInteractionResponse::new().content(response_content),
         )
-        .await?;
+        .await
+        .unwrap();
 
     // Target user is not connected to voice.
     if let Err(serenity::Error::Http(HttpError::UnsuccessfulRequest(ErrorResponse {

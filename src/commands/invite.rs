@@ -15,7 +15,7 @@ pub async fn invite(
     channel_id: ChannelId,
     mut row: VoiceChannelData,
 ) -> Result<(), Error> {
-    interaction.defer_ephemeral(ctx).await?;
+    interaction.defer_ephemeral(ctx).await.unwrap();
 
     let user = match options.remove("user") {
         Some(ResolvedValue::User(user, _member)) => user,
@@ -33,7 +33,8 @@ pub async fn invite(
                 kind: PermissionOverwriteType::Member(user.id),
             },
         )
-        .await?;
+        .await
+        .unwrap();
 
     let result = user
         .direct_message(
@@ -52,7 +53,8 @@ pub async fn invite(
 
     interaction
         .edit_response(ctx, EditInteractionResponse::new().content(content))
-        .await?;
+        .await
+        .unwrap();
 
     Ok(())
 }

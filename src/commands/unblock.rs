@@ -15,7 +15,7 @@ pub async fn unblock(
     channel_id: ChannelId,
     row: &VoiceChannelData,
 ) -> Result<(), Error> {
-    interaction.defer_ephemeral(ctx).await?;
+    interaction.defer_ephemeral(ctx).await.unwrap();
 
     if !row.is_trusted(interaction.user.id) {
         return Err(Error::MissingPermissions(PermissionError::NotTrusted));
@@ -28,14 +28,16 @@ pub async fn unblock(
 
     channel_id
         .delete_permission(ctx, PermissionOverwriteType::Member(user.id))
-        .await?;
+        .await
+        .unwrap();
 
     interaction
         .edit_response(
             ctx,
             EditInteractionResponse::new().content("Removed user from blocked."),
         )
-        .await?;
+        .await
+        .unwrap();
 
     Ok(())
 }

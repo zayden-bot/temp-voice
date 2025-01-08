@@ -10,7 +10,7 @@ pub async fn persist<Db: Database, Manager: VoiceChannelManager<Db>>(
     pool: &Pool<Db>,
     mut row: VoiceChannelData,
 ) -> Result<()> {
-    interaction.defer_ephemeral(ctx).await?;
+    interaction.defer_ephemeral(ctx).await.unwrap();
 
     if interaction.user.id != row.owner_id {
         return Err(Error::MissingPermissions(PermissionError::NotOwner));
@@ -35,7 +35,8 @@ pub async fn persist<Db: Database, Manager: VoiceChannelManager<Db>>(
             EditInteractionResponse::new()
                 .content(format!("Channel persistence is now {}.", state)),
         )
-        .await?;
+        .await
+        .unwrap();
 
     Ok(())
 }

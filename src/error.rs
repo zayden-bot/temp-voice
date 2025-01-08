@@ -19,9 +19,6 @@ pub enum Error {
     UserIsOwner,
     MissingPermissions(PermissionError),
     ChannelNotFound(ChannelId),
-
-    Serenity(serenity::Error),
-    Sqlx(sqlx::Error),
 }
 
 impl ErrorResponse for Error {
@@ -47,7 +44,6 @@ impl ErrorResponse for Error {
                 "Channel not found: {}\nTry using `/voice claim` to claim the channel.",
                 id.mention()
             ),
-            _ => String::new(),
         }
     }
 }
@@ -59,15 +55,3 @@ impl std::fmt::Display for Error {
 }
 
 impl std::error::Error for Error {}
-
-impl From<serenity::Error> for Error {
-    fn from(error: serenity::Error) -> Self {
-        Self::Serenity(error)
-    }
-}
-
-impl From<sqlx::Error> for Error {
-    fn from(error: sqlx::Error) -> Self {
-        Self::Sqlx(error)
-    }
-}

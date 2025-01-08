@@ -18,7 +18,7 @@ pub async fn block<Db: Database, Manager: VoiceChannelManager<Db>>(
     channel_id: ChannelId,
     mut row: VoiceChannelData,
 ) -> Result<(), Error> {
-    interaction.defer_ephemeral(ctx).await?;
+    interaction.defer_ephemeral(ctx).await.unwrap();
 
     if !row.is_trusted(interaction.user.id) {
         return Err(Error::MissingPermissions(PermissionError::NotTrusted));
@@ -41,16 +41,18 @@ pub async fn block<Db: Database, Manager: VoiceChannelManager<Db>>(
                 kind: PermissionOverwriteType::Member(user.id),
             },
         )
-        .await?;
+        .await
+        .unwrap();
 
-    guild_id.disconnect_member(ctx, user.id).await?;
+    guild_id.disconnect_member(ctx, user.id).await.unwrap();
 
     interaction
         .edit_response(
             ctx,
             EditInteractionResponse::new().content("Set user to blocked."),
         )
-        .await?;
+        .await
+        .unwrap();
 
     Ok(())
 }

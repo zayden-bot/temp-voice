@@ -15,7 +15,7 @@ pub async fn reset<Db: Database, Manager: VoiceChannelManager<Db>>(
     channel_id: ChannelId,
     mut row: VoiceChannelData,
 ) -> Result<()> {
-    interaction.defer_ephemeral(ctx).await?;
+    interaction.defer_ephemeral(ctx).await.unwrap();
 
     if !row.is_owner(interaction.user.id) {
         return Err(Error::MissingPermissions(PermissionError::NotOwner));
@@ -26,7 +26,8 @@ pub async fn reset<Db: Database, Manager: VoiceChannelManager<Db>>(
 
     let channel = guild_id
         .channels(ctx)
-        .await?
+        .await
+        .unwrap()
         .remove(&channel_id)
         .ok_or(Error::ChannelNotFound(channel_id))?;
 
@@ -44,14 +45,16 @@ pub async fn reset<Db: Database, Manager: VoiceChannelManager<Db>>(
                 .user_limit(0)
                 .permissions(vec![everyone_permissions.clone()]),
         )
-        .await?;
+        .await
+        .unwrap();
 
     interaction
         .edit_response(
             ctx,
             EditInteractionResponse::new().content("Reset channel."),
         )
-        .await?;
+        .await
+        .unwrap();
 
     Ok(())
 }

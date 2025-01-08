@@ -114,7 +114,8 @@ impl VoiceChannelData {
             self.password.as_deref(),
             self.persistent,
         )
-        .await?;
+        .await
+        .unwrap();
 
         Ok(())
     }
@@ -123,7 +124,7 @@ impl VoiceChannelData {
         self,
         pool: &Pool<Db>,
     ) -> Result<()> {
-        Manager::delete(pool, self.id).await?;
+        Manager::delete(pool, self.id).await.unwrap();
 
         Ok(())
     }

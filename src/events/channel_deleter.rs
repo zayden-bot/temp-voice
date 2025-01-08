@@ -21,7 +21,7 @@ pub async fn channel_deleter<
         .guild_id
         .expect("Should be in a guild as voice channels are guild only");
 
-    let guild_data = GuildManager::get(pool, guild_id).await?;
+    let guild_data = GuildManager::get(pool, guild_id).await.unwrap();
 
     let channel_id = match old.channel_id {
         Some(channel_id) if channel_id != guild_data.creator_channel() => channel_id,
@@ -31,7 +31,7 @@ pub async fn channel_deleter<
     let row = match ChannelManager::get(pool, channel_id).await {
         Ok(row) => row,
         Err(sqlx::Error::RowNotFound) => return Ok(()),
-        Err(e) => return Err(e.into()),
+        e => e.unwrap(),
     };
 
     if row.is_persistent() {
@@ -47,7 +47,7 @@ pub async fn channel_deleter<
             // Channel already deleted, ignore this error
             return Ok(());
         }
-        Err(e) => return Err(e.into()),
+        e => e.unwrap(),
     };
 
     let category = guild_data.category();
@@ -78,14 +78,15 @@ pub async fn channel_deleter<
         row.delete::<Db, ChannelManager>(pool).await?;
 
         match channel_id.delete(ctx).await {
-            Ok(_) => {}
             Err(serenity::Error::Http(HttpError::UnsuccessfulRequest(ErrorResponse {
                 error: DiscordJsonError { code: 10003, .. },
                 ..
             }))) => {
                 // Channel already deleted, ignore this error
             }
-            Err(e) => return Err(e.into()),
+            result => {
+                result.unwrap();
+            }
         };
     }
 

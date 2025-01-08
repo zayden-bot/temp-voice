@@ -18,7 +18,7 @@ pub async fn password<Db: Database, Manager: VoiceChannelManager<Db>>(
     channel_id: ChannelId,
     mut row: VoiceChannelData,
 ) -> Result<()> {
-    interaction.defer_ephemeral(ctx).await?;
+    interaction.defer_ephemeral(ctx).await.unwrap();
 
     if !row.is_owner(interaction.user.id) {
         return Err(Error::MissingPermissions(PermissionError::NotOwner));
@@ -47,11 +47,13 @@ pub async fn password<Db: Database, Manager: VoiceChannelManager<Db>>(
 
     channel_id
         .edit(ctx, EditChannel::new().permissions(perms))
-        .await?;
+        .await
+        .unwrap();
 
     interaction
         .edit_response(ctx, EditInteractionResponse::new().content("Password set."))
-        .await?;
+        .await
+        .unwrap();
 
     Ok(())
 }

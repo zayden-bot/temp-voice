@@ -16,7 +16,7 @@ pub async fn join(
     channel_id: ChannelId,
     row: &VoiceChannelData,
 ) -> Result<()> {
-    interaction.defer_ephemeral(ctx).await?;
+    interaction.defer_ephemeral(ctx).await.unwrap();
 
     let pass = match options.remove("pass") {
         Some(ResolvedValue::String(pass)) => pass,
@@ -36,18 +36,21 @@ pub async fn join(
                 kind: PermissionOverwriteType::Member(interaction.user.id),
             },
         )
-        .await?;
+        .await
+        .unwrap();
 
     guild_id
         .move_member(ctx, interaction.user.id, channel_id)
-        .await?;
+        .await
+        .unwrap();
 
     interaction
         .edit_response(
             ctx,
             EditInteractionResponse::new().content("Successfully joined channel."),
         )
-        .await?;
+        .await
+        .unwrap();
 
     Ok(())
 }

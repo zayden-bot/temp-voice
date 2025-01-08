@@ -14,7 +14,7 @@ pub async fn limit(
     channel_id: ChannelId,
     row: &VoiceChannelData,
 ) -> Result<(), Error> {
-    interaction.defer_ephemeral(ctx).await?;
+    interaction.defer_ephemeral(ctx).await.unwrap();
 
     if !row.is_trusted(interaction.user.id) {
         return Err(Error::MissingPermissions(PermissionError::NotTrusted));
@@ -27,14 +27,16 @@ pub async fn limit(
 
     channel_id
         .edit(ctx, EditChannel::new().user_limit(limit))
-        .await?;
+        .await
+        .unwrap();
 
     interaction
         .edit_response(
             ctx,
             EditInteractionResponse::new().content(format!("User limit set to {}", limit)),
         )
-        .await?;
+        .await
+        .unwrap();
 
     Ok(())
 }

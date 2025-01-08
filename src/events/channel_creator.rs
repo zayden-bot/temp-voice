@@ -22,7 +22,9 @@ pub async fn channel_creator<
         .guild_id
         .expect("Should be in a guild as voice channels are guild only");
 
-    let creator_channel = GuildManager::get_creator_channel(pool, guild_id).await?;
+    let creator_channel = GuildManager::get_creator_channel(pool, guild_id)
+        .await
+        .unwrap();
 
     let creator_channel_id = match new.channel_id {
         Some(channel) if channel == creator_channel => channel,
@@ -31,7 +33,8 @@ pub async fn channel_creator<
 
     let creator_category = creator_channel_id
         .to_channel(ctx)
-        .await?
+        .await
+        .unwrap()
         .guild()
         .expect("Should be in a guild")
         .parent_id
@@ -50,10 +53,9 @@ pub async fn channel_creator<
         .category(creator_category)
         .permissions(perms);
 
-    let vc = guild_id.create_channel(ctx, vc_builder).await?;
+    let vc = guild_id.create_channel(ctx, vc_builder).await.unwrap();
 
     match guild_id.move_member(ctx, member.user.id, vc.id).await {
-        Ok(_) => {}
         // Target user is not connected to voice.
         Err(serenity::Error::Http(HttpError::UnsuccessfulRequest(ErrorResponse {
             error: DiscordJsonError { code: 40032, .. },
@@ -66,14 +68,15 @@ pub async fn channel_creator<
                     CreateMessage::new()
                         .content("Voice channel created. You have 1 minute to join."),
                 )
-                .await?;
+                .await
+                .unwrap();
 
             if delete_voice_channel_if_inactive(ctx, guild_id, member.user.id, &vc).await? {
                 return Ok(());
             }
         }
-        Err(e) => {
-            return Err(e.into());
+        result => {
+            result.unwrap();
         }
     };
 

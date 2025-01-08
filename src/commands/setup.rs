@@ -15,7 +15,7 @@ pub async fn setup<Db: Database, Manager: TempVoiceGuildManager<Db>>(
     guild_id: GuildId,
     mut options: HashMap<&str, &ResolvedValue<'_>>,
 ) -> Result<()> {
-    interaction.defer_ephemeral(ctx).await?;
+    interaction.defer_ephemeral(ctx).await.unwrap();
 
     if !interaction
         .member
@@ -31,7 +31,8 @@ pub async fn setup<Db: Database, Manager: TempVoiceGuildManager<Db>>(
                 EditInteractionResponse::new()
                     .content("You must be an administrator to run this command."),
             )
-            .await?;
+            .await
+            .unwrap();
         return Ok(());
     }
 
@@ -47,16 +48,20 @@ pub async fn setup<Db: Database, Manager: TempVoiceGuildManager<Db>>(
                 .category(category.id)
                 .kind(ChannelType::Voice),
         )
-        .await?;
+        .await
+        .unwrap();
 
-    Manager::save(pool, guild_id, category.id, creator_channel.id).await?;
+    Manager::save(pool, guild_id, category.id, creator_channel.id)
+        .await
+        .unwrap();
 
     interaction
         .edit_response(
             ctx,
             EditInteractionResponse::new().content("Setup complete."),
         )
-        .await?;
+        .await
+        .unwrap();
 
     Ok(())
 }
