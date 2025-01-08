@@ -54,7 +54,7 @@ use crate::{
 pub struct VoiceCommand;
 
 impl VoiceCommand {
-    pub async fn run<
+    pub(self) async fn run<
         Db: Database,
         GuildManager: TempVoiceGuildManager<Db>,
         ChannelManager: VoiceChannelManager<Db>,
@@ -199,7 +199,7 @@ impl VoiceCommand {
         Ok(())
     }
 
-    pub fn register() -> CreateCommand {
+    pub(self) fn register() -> CreateCommand {
         let setup = CreateCommandOption::new(
             CommandOptionType::SubCommand,
             "setup",
