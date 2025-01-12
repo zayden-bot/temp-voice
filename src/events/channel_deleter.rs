@@ -28,10 +28,9 @@ pub async fn channel_deleter<
         _ => return Ok(()),
     };
 
-    let row = match ChannelManager::get(pool, channel_id).await {
-        Ok(row) => row,
-        Err(sqlx::Error::RowNotFound) => return Ok(()),
-        e => e.unwrap(),
+    let row = match ChannelManager::get(pool, channel_id).await.unwrap() {
+        Some(row) => row,
+        None => return Ok(()),
     };
 
     if row.is_persistent() {

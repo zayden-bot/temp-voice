@@ -18,7 +18,7 @@ pub trait VoiceChannelManager<Db: Database> {
         password: Option<&str>,
         persistent: impl Into<bool> + Send,
     ) -> sqlx::Result<AnyQueryResult>;
-    async fn get(pool: &Pool<Db>, id: ChannelId) -> sqlx::Result<VoiceChannelData>;
+    async fn get(pool: &Pool<Db>, id: ChannelId) -> sqlx::Result<Option<VoiceChannelData>>;
     async fn delete(pool: &Pool<Db>, id: ChannelId) -> sqlx::Result<AnyQueryResult>;
 }
 
