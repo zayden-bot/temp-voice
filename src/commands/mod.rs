@@ -75,6 +75,7 @@ impl VoiceCommand {
         match command.name {
             "setup" => {
                 setup::<Db, GuildManager>(ctx, interaction, pool, guild_id, options).await?;
+
                 return Ok(());
             }
             "create" => {
@@ -86,6 +87,7 @@ impl VoiceCommand {
                     options,
                 )
                 .await?;
+
                 return Ok(());
             }
             _ => {}
@@ -95,7 +97,7 @@ impl VoiceCommand {
             Some(ResolvedValue::Channel(channel)) => channel.id,
             _ => get_voice_state(ctx, guild_id, interaction.user.id)
                 .await
-                .unwrap()
+                .map_err(|_| Error::MemberNotInVoiceChannel)?
                 .channel_id
                 .ok_or(Error::MemberNotInVoiceChannel)?,
         };

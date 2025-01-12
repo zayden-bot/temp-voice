@@ -26,7 +26,7 @@ impl ErrorResponse for Error {
         match self {
             Error::CommandNotInGuild => String::from("This command can only be used in a guild."),
             Error::MemberNotInVoiceChannel => {
-                String::from("You must be in a voice channel to use this command.")
+                String::from("You must be in a voice channel or use the `channel` option to specify a channel to use this command.")
             }
             Error::OwnerInChannel => {
                 String::from("Cannot use this command while the channel owner is present.")
