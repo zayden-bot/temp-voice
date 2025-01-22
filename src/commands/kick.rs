@@ -8,7 +8,7 @@ use crate::{Error, VoiceChannelData};
 pub async fn kick(
     ctx: &Context,
     interaction: &CommandInteraction,
-    mut options: HashMap<&str, &ResolvedValue<'_>>,
+    mut options: HashMap<&str, ResolvedValue<'_>>,
     guild_id: GuildId,
     row: &VoiceChannelData,
 ) -> Result<(), Error> {
@@ -19,7 +19,7 @@ pub async fn kick(
     }
 
     let user = match options.remove("member") {
-        Some(ResolvedValue::User(user, _)) => *user,
+        Some(ResolvedValue::User(user, _)) => user,
         _ => unreachable!("Member option is required"),
     };
 
@@ -30,7 +30,8 @@ pub async fn kick(
             ctx,
             EditInteractionResponse::new().content("User kicked from channel."),
         )
-        .await.unwrap();
+        .await
+        .unwrap();
 
     Ok(())
 }

@@ -13,7 +13,7 @@ pub async fn untrust<Db: Database, Manager: VoiceChannelManager<Db>>(
     ctx: &Context,
     interaction: &CommandInteraction,
     pool: &Pool<Db>,
-    mut options: HashMap<&str, &ResolvedValue<'_>>,
+    mut options: HashMap<&str, ResolvedValue<'_>>,
     channel_id: ChannelId,
     mut row: VoiceChannelData,
 ) -> Result<(), Error> {

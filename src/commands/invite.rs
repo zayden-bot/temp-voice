@@ -11,7 +11,7 @@ use crate::{Error, VoiceChannelData};
 pub async fn invite(
     ctx: &Context,
     interaction: &CommandInteraction,
-    mut options: HashMap<&str, &ResolvedValue<'_>>,
+    mut options: HashMap<&str, ResolvedValue<'_>>,
     channel_id: ChannelId,
     mut row: VoiceChannelData,
 ) -> Result<(), Error> {

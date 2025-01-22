@@ -30,7 +30,7 @@ impl CachedState {
         let user = if let Some(member) = state.member {
             member.user
         } else {
-            ctx.http.get_user(state.user_id).await.unwrap()
+            state.user_id.to_user(ctx).await.unwrap()
         };
 
         Ok(Self {

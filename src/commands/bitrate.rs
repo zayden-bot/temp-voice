@@ -10,7 +10,7 @@ use crate::{Error, VoiceChannelData};
 pub async fn bitrate(
     ctx: &Context,
     interaction: &CommandInteraction,
-    mut options: HashMap<&str, &ResolvedValue<'_>>,
+    mut options: HashMap<&str, ResolvedValue<'_>>,
     channel_id: ChannelId,
     row: &VoiceChannelData,
 ) -> Result<(), Error> {
@@ -21,7 +21,7 @@ pub async fn bitrate(
     }
 
     let kbps = match options.remove("kbps") {
-        Some(ResolvedValue::Integer(kbps)) => *kbps as u32,
+        Some(ResolvedValue::Integer(kbps)) => kbps as u32,
         _ => unreachable!("Kbps option is required"),
     };
 

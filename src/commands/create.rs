@@ -21,7 +21,7 @@ pub async fn create<
     interaction: &serenity::all::CommandInteraction,
     pool: &Pool<Db>,
     guild_id: GuildId,
-    mut options: HashMap<&str, &ResolvedValue<'_>>,
+    mut options: HashMap<&str, ResolvedValue<'_>>,
 ) -> Result<(), Error> {
     interaction.defer_ephemeral(ctx).await.unwrap();
 
@@ -31,7 +31,7 @@ pub async fn create<
     };
 
     let limit = match options.remove("limit") {
-        Some(ResolvedValue::Integer(limit)) => (*limit).clamp(0, 99) as u32,
+        Some(ResolvedValue::Integer(limit)) => limit.clamp(0, 99) as u32,
         _ => 0,
     };
 

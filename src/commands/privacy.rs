@@ -11,7 +11,7 @@ use crate::{Error, VoiceChannelData};
 pub async fn privacy(
     ctx: &Context,
     interaction: &CommandInteraction,
-    mut options: HashMap<&str, &ResolvedValue<'_>>,
+    mut options: HashMap<&str, ResolvedValue<'_>>,
     guild_id: GuildId,
     channel_id: ChannelId,
     row: &VoiceChannelData,

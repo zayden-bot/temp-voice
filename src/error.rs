@@ -11,39 +11,47 @@ pub enum PermissionError {
 
 #[derive(Debug)]
 pub enum Error {
-    CommandNotInGuild,
+    MissingGuildId,
     MemberNotInVoiceChannel,
     OwnerInChannel,
     InvalidPassword,
     PremiumRequired,
     UserIsOwner,
     MissingPermissions(PermissionError),
-    ChannelNotFound(ChannelId),
+    ChannelNotFound(String),
+}
+
+impl Error {
+    pub fn channel_not_found(id: ChannelId) -> Self {
+        let response = format!(
+            "Channel not found: {}\nTry using `/voice claim` to claim the channel.",
+            id.mention()
+        );
+
+        Self::ChannelNotFound(response)
+    }
 }
 
 impl ErrorResponse for Error {
-    fn to_response(&self) -> String {
+    fn to_response(&self) -> &str {
         match self {
-            Error::CommandNotInGuild => String::from("This command can only be used in a guild."),
+            Error::MissingGuildId => zayden_core::Error::MissingGuildId.to_response(),
             Error::MemberNotInVoiceChannel => {
-                String::from("You must be in a voice channel or use the `channel` option to specify a channel to use this command.")
+                "You must be in a voice channel or use the `channel` option to specify a channel to use this command."
             }
             Error::OwnerInChannel => {
-                String::from("Cannot use this command while the channel owner is present.")
+                "Cannot use this command while the channel owner is present."
             }
-            Error::InvalidPassword => String::from("Invalid password."),
-            Error::PremiumRequired => String::from("Only Server Boosters can use this command."),
-            Error::UserIsOwner => String::from("You are already the owner of this channel."),
+            Error::InvalidPassword => "Invalid password.",
+            Error::PremiumRequired => "Only Server Boosters can use this command.",
+            Error::UserIsOwner => "You are already the owner of this channel.",
             Error::MissingPermissions(PermissionError::NotOwner) => {
-                String::from("Only the channel owner can use this command.")
+                "Only the channel owner can use this command."
             }
             Error::MissingPermissions(PermissionError::NotTrusted) => {
-                String::from("You must be trusted to use this command.")
+                "You must be trusted to use this command."
             }
-            Error::ChannelNotFound(id) => format!(
-                "Channel not found: {}\nTry using `/voice claim` to claim the channel.",
-                id.mention()
-            ),
+            Error::ChannelNotFound(msg) => msg,
         }
     }
 }

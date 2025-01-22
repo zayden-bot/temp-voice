@@ -13,7 +13,7 @@ pub async fn password<Db: Database, Manager: VoiceChannelManager<Db>>(
     ctx: &Context,
     interaction: &CommandInteraction,
     pool: &Pool<Db>,
-    mut options: HashMap<&str, &ResolvedValue<'_>>,
+    mut options: HashMap<&str, ResolvedValue<'_>>,
     guild_id: GuildId,
     channel_id: ChannelId,
     mut row: VoiceChannelData,

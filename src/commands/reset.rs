@@ -29,7 +29,7 @@ pub async fn reset<Db: Database, Manager: VoiceChannelManager<Db>>(
         .await
         .unwrap()
         .remove(&channel_id)
-        .ok_or(Error::ChannelNotFound(channel_id))?;
+        .ok_or(Error::channel_not_found(channel_id))?;
 
     let everyone_permissions = channel
         .permission_overwrites

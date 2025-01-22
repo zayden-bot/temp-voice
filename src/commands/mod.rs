@@ -63,11 +63,11 @@ impl VoiceCommand {
         interaction: &CommandInteraction,
         pool: &Pool<Db>,
     ) -> Result<()> {
-        let guild_id = interaction.guild_id.ok_or(Error::CommandNotInGuild)?;
+        let guild_id = interaction.guild_id.ok_or(Error::MissingGuildId)?;
 
-        let command = &interaction.data.options()[0];
+        let command = interaction.data.options().pop().unwrap();
 
-        let mut options = match &command.value {
+        let mut options = match command.value {
             ResolvedValue::SubCommand(options) => parse_options(options),
             _ => unreachable!("Subcommand is required"),
         };
@@ -109,7 +109,9 @@ impl VoiceCommand {
             return Ok(());
         }
 
-        let row = row.ok_or(Error::ChannelNotFound(channel_id)).unwrap();
+        let row = row
+            .ok_or_else(|| Error::channel_not_found(channel_id))
+            .unwrap();
 
         match command.name {
             "join" => {

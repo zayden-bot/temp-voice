@@ -13,7 +13,7 @@ pub async fn setup<Db: Database, Manager: TempVoiceGuildManager<Db>>(
     interaction: &CommandInteraction,
     pool: &Pool<Db>,
     guild_id: GuildId,
-    mut options: HashMap<&str, &ResolvedValue<'_>>,
+    mut options: HashMap<&str, ResolvedValue<'_>>,
 ) -> Result<()> {
     interaction.defer_ephemeral(ctx).await.unwrap();
 
@@ -37,7 +37,7 @@ pub async fn setup<Db: Database, Manager: TempVoiceGuildManager<Db>>(
     }
 
     let category = match options.remove("category") {
-        Some(ResolvedValue::Channel(category)) => *category,
+        Some(ResolvedValue::Channel(category)) => category,
         _ => unreachable!("Category is required"),
     };
 

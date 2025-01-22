@@ -10,7 +10,7 @@ use crate::{Error, VoiceChannelData};
 pub async fn limit(
     ctx: &Context,
     interaction: &CommandInteraction,
-    mut options: HashMap<&str, &ResolvedValue<'_>>,
+    mut options: HashMap<&str, ResolvedValue<'_>>,
     channel_id: ChannelId,
     row: &VoiceChannelData,
 ) -> Result<(), Error> {
@@ -21,7 +21,7 @@ pub async fn limit(
     }
 
     let limit = match options.remove("user_limit") {
-        Some(ResolvedValue::Integer(limit)) => (*limit).clamp(0, 99) as u32,
+        Some(ResolvedValue::Integer(limit)) => limit.clamp(0, 99) as u32,
         _ => 0,
     };
 
