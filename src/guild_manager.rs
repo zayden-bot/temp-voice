@@ -16,7 +16,7 @@ pub trait TempVoiceGuildManager<Db: Database> {
 
     async fn get_category(pool: &Pool<Db>, id: GuildId) -> sqlx::Result<ChannelId>;
 
-    async fn get_creator_channel(pool: &Pool<Db>, id: GuildId) -> sqlx::Result<ChannelId>;
+    async fn get_creator_channel(pool: &Pool<Db>, id: GuildId) -> sqlx::Result<Option<ChannelId>>;
 }
 
 #[derive(FromRow)]

@@ -22,9 +22,13 @@ pub async fn channel_creator<
         .guild_id
         .expect("Should be in a guild as voice channels are guild only");
 
-    let creator_channel = GuildManager::get_creator_channel(pool, guild_id)
+    let creator_channel = match GuildManager::get_creator_channel(pool, guild_id)
         .await
-        .unwrap();
+        .unwrap()
+    {
+        Some(channel) => channel,
+        None => return Ok(()),
+    };
 
     let creator_channel_id = match new.channel_id {
         Some(channel) if channel == creator_channel => channel,
