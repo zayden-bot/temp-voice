@@ -22,11 +22,19 @@ pub use voice_channel_manager::{VoiceChannelData, VoiceChannelManager};
 #[derive(Debug)]
 pub struct CachedState {
     pub channel_id: Option<ChannelId>,
-    pub guild_id: Option<GuildId>,
+    pub guild_id: GuildId,
     pub user: User,
 }
 
 impl CachedState {
+    pub fn new(channel_id: Option<ChannelId>, guild_id: GuildId, user: User) -> Self {
+        Self {
+            channel_id,
+            guild_id,
+            user,
+        }
+    }
+
     async fn from_voice_state(ctx: &Context, state: VoiceState) -> Result<Self> {
         let user = if let Some(member) = state.member {
             member.user
@@ -36,7 +44,7 @@ impl CachedState {
 
         Ok(Self {
             channel_id: state.channel_id,
-            guild_id: state.guild_id,
+            guild_id: state.guild_id.unwrap(),
             user,
         })
     }
@@ -46,7 +54,7 @@ pub struct VoiceStateCache;
 
 impl VoiceStateCache {
     pub async fn new_with_states(
-        ctx: &Context,
+        guild_id: GuildId,
         states: &HashMap<UserId, VoiceState>,
     ) -> HashMap<UserId, CachedState> {
         let mut cache = HashMap::new();
@@ -57,9 +65,11 @@ impl VoiceStateCache {
         {
             cache.insert(
                 *user_id,
-                CachedState::from_voice_state(ctx, state.clone())
-                    .await
-                    .unwrap(),
+                CachedState::new(
+                    state.channel_id,
+                    guild_id,
+                    state.member.as_ref().unwrap().user.clone(),
+                ),
             );
         }
 

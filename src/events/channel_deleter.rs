@@ -17,11 +17,7 @@ pub async fn channel_deleter<
         None => return Ok(()),
     };
 
-    let guild_id = old
-        .guild_id
-        .expect("Should be in a guild as voice channels are guild only");
-
-    let guild_data = GuildManager::get(pool, guild_id).await.unwrap();
+    let guild_data = GuildManager::get(pool, old.guild_id).await.unwrap();
 
     let channel_id = match old.channel_id {
         Some(channel_id) if channel_id != guild_data.creator_channel() => channel_id,
