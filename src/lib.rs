@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use serenity::all::{
-    ChannelId, Context, GuildChannel, GuildId, LightMethod, Request, Route, User, UserId,
+    ChannelId, Context, Guild, GuildChannel, GuildId, LightMethod, Request, Route, User, UserId,
     VoiceState,
 };
 use serenity::prelude::TypeMapKey;
@@ -53,13 +53,11 @@ impl CachedState {
 pub struct VoiceStateCache;
 
 impl VoiceStateCache {
-    pub async fn new_with_states(
-        guild_id: GuildId,
-        states: &HashMap<UserId, VoiceState>,
-    ) -> HashMap<UserId, CachedState> {
+    pub async fn new_with_guild(guild: &Guild) -> HashMap<UserId, CachedState> {
         let mut cache = HashMap::new();
 
-        for (user_id, state) in states
+        for (user_id, state) in guild
+            .voice_states
             .iter()
             .filter(|(_, state)| state.channel_id.is_some())
         {
@@ -67,8 +65,8 @@ impl VoiceStateCache {
                 *user_id,
                 CachedState::new(
                     state.channel_id,
-                    guild_id,
-                    state.member.as_ref().unwrap().user.clone(),
+                    guild.id,
+                    guild.members.get(user_id).unwrap().user.clone(),
                 ),
             );
         }
