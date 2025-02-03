@@ -57,7 +57,10 @@ impl VoiceStateCache {
             .iter()
             .filter(|(_, state)| state.channel_id.is_some())
         {
-            cache.insert(*user_id, state.into());
+            cache.insert(
+                *user_id,
+                CachedState::new(state.channel_id, guild.id, state.user_id),
+            );
         }
 
         cache
