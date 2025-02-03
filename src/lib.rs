@@ -44,8 +44,28 @@ impl CachedState {
 pub struct VoiceStateCache;
 
 impl VoiceStateCache {
+    pub async fn new_with_states(
+        ctx: &Context,
+        states: &HashMap<UserId, VoiceState>,
+    ) -> HashMap<UserId, CachedState> {
+        let mut cache = HashMap::new();
+
+        for (user_id, state) in states
+            .iter()
+            .filter(|(_, state)| state.channel_id.is_some())
+        {
+            cache.insert(
+                *user_id,
+                CachedState::from_voice_state(ctx, state.clone())
+                    .await
+                    .unwrap(),
+            );
+        }
+
+        cache
+    }
+
     pub async fn update(ctx: &Context, new: VoiceState) -> Result<Option<CachedState>> {
-        let new = new.clone();
         let mut data = ctx.data.write().await;
         let cache = data
             .get_mut::<Self>()
