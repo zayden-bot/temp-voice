@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use serenity::all::{
-    ChannelId, Context, Guild, GuildChannel, GuildId, LightMethod, Request, Route, User, UserId,
+    ChannelId, Context, Guild, GuildChannel, GuildId, LightMethod, Request, Route, UserId,
     VoiceState,
 };
 use serenity::prelude::TypeMapKey;
@@ -23,30 +23,26 @@ pub use voice_channel_manager::{VoiceChannelData, VoiceChannelManager};
 pub struct CachedState {
     pub channel_id: Option<ChannelId>,
     pub guild_id: GuildId,
-    pub user: User,
+    pub user_id: UserId,
 }
 
 impl CachedState {
-    pub fn new(channel_id: Option<ChannelId>, guild_id: GuildId, user: User) -> Self {
+    pub fn new(channel_id: Option<ChannelId>, guild_id: GuildId, user_id: UserId) -> Self {
         Self {
             channel_id,
             guild_id,
-            user,
+            user_id,
         }
     }
+}
 
-    async fn from_voice_state(ctx: &Context, state: VoiceState) -> Result<Self> {
-        let user = if let Some(member) = state.member {
-            member.user
-        } else {
-            state.user_id.to_user(ctx).await.unwrap()
-        };
-
-        Ok(Self {
+impl From<&VoiceState> for CachedState {
+    fn from(state: &VoiceState) -> Self {
+        Self {
             channel_id: state.channel_id,
             guild_id: state.guild_id.unwrap(),
-            user,
-        })
+            user_id: state.user_id,
+        }
     }
 }
 
@@ -61,20 +57,13 @@ impl VoiceStateCache {
             .iter()
             .filter(|(_, state)| state.channel_id.is_some())
         {
-            cache.insert(
-                *user_id,
-                CachedState::new(
-                    state.channel_id,
-                    guild.id,
-                    guild.members.get(user_id).unwrap().user.clone(),
-                ),
-            );
+            cache.insert(*user_id, state.into());
         }
 
         cache
     }
 
-    pub async fn update(ctx: &Context, new: VoiceState) -> Result<Option<CachedState>> {
+    pub async fn update(ctx: &Context, new: &VoiceState) -> Result<Option<CachedState>> {
         let mut data = ctx.data.write().await;
         let cache = data
             .get_mut::<Self>()
@@ -83,7 +72,7 @@ impl VoiceStateCache {
         let old = if new.channel_id.is_none() {
             cache.remove(&new.user_id)
         } else {
-            cache.insert(new.user_id, CachedState::from_voice_state(ctx, new).await?)
+            cache.insert(new.user_id, new.into())
         };
 
         Ok(old)
