@@ -19,6 +19,7 @@ use error::Result;
 pub use guild_manager::{TempVoiceGuildManager, TempVoiceRow};
 pub use voice_channel_manager::{VoiceChannelData, VoiceChannelManager};
 
+#[derive(Debug)]
 pub struct CachedState {
     pub channel_id: Option<ChannelId>,
     pub guild_id: Option<GuildId>,
