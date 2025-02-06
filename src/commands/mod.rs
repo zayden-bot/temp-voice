@@ -109,9 +109,7 @@ impl VoiceCommand {
             return Ok(());
         }
 
-        let row = row
-            .ok_or_else(|| Error::channel_not_found(channel_id))
-            .unwrap();
+        let row = row.ok_or_else(|| Error::channel_not_found(channel_id))?;
 
         match command.name {
             "join" => {
