@@ -17,7 +17,7 @@ pub use commands::VoiceCommand;
 pub use error::Error;
 use error::Result;
 pub use guild_manager::{TempVoiceGuildManager, TempVoiceRow};
-pub use voice_channel_manager::{VoiceChannelData, VoiceChannelManager};
+pub use voice_channel_manager::{VoiceChannelManager, VoiceChannelRow};
 
 #[derive(Debug)]
 pub struct CachedState {

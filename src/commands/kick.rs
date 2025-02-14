@@ -3,14 +3,14 @@ use std::collections::HashMap;
 use serenity::all::{CommandInteraction, Context, EditInteractionResponse, GuildId, ResolvedValue};
 
 use crate::error::PermissionError;
-use crate::{Error, VoiceChannelData};
+use crate::{Error, VoiceChannelRow};
 
 pub async fn kick(
     ctx: &Context,
     interaction: &CommandInteraction,
     mut options: HashMap<&str, ResolvedValue<'_>>,
     guild_id: GuildId,
-    row: &VoiceChannelData,
+    row: &VoiceChannelRow,
 ) -> Result<(), Error> {
     interaction.defer_ephemeral(ctx).await.unwrap();
 

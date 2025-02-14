@@ -6,14 +6,14 @@ use serenity::all::{
 };
 use serenity::all::{CreateMessage, Mentionable};
 
-use crate::{Error, VoiceChannelData};
+use crate::{Error, VoiceChannelRow};
 
 pub async fn invite(
     ctx: &Context,
     interaction: &CommandInteraction,
     mut options: HashMap<&str, ResolvedValue<'_>>,
     channel_id: ChannelId,
-    mut row: VoiceChannelData,
+    mut row: VoiceChannelRow,
 ) -> Result<(), Error> {
     interaction.defer_ephemeral(ctx).await.unwrap();
 

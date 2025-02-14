@@ -7,7 +7,7 @@ use serenity::all::{
 use sqlx::{Database, Pool};
 
 use crate::error::PermissionError;
-use crate::{Error, VoiceChannelData, VoiceChannelManager};
+use crate::{Error, VoiceChannelRow, VoiceChannelManager};
 
 pub async fn untrust<Db: Database, Manager: VoiceChannelManager<Db>>(
     ctx: &Context,
@@ -15,7 +15,7 @@ pub async fn untrust<Db: Database, Manager: VoiceChannelManager<Db>>(
     pool: &Pool<Db>,
     mut options: HashMap<&str, ResolvedValue<'_>>,
     channel_id: ChannelId,
-    mut row: VoiceChannelData,
+    mut row: VoiceChannelRow,
 ) -> Result<(), Error> {
     interaction.defer_ephemeral(ctx).await.unwrap();
 

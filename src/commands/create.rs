@@ -8,7 +8,7 @@ use serenity::all::{DiscordJsonError, EditInteractionResponse, ErrorResponse, Ht
 use sqlx::{Database, Pool};
 
 use crate::{
-    delete_voice_channel_if_inactive, Error, TempVoiceGuildManager, VoiceChannelData,
+    delete_voice_channel_if_inactive, Error, TempVoiceGuildManager, VoiceChannelRow,
     VoiceChannelManager,
 };
 
@@ -106,7 +106,7 @@ pub async fn create<
         }
     }
 
-    let row = VoiceChannelData::new(vc.id, interaction.user.id);
+    let row = VoiceChannelRow::new(vc.id, interaction.user.id);
     row.save::<Db, ChannelManager>(pool).await?;
 
     Ok(())

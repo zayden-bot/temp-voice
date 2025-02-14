@@ -5,7 +5,7 @@ use serenity::all::{
 use sqlx::{Database, Pool};
 
 use crate::{
-    delete_voice_channel_if_inactive, Result, TempVoiceGuildManager, VoiceChannelData,
+    delete_voice_channel_if_inactive, Result, TempVoiceGuildManager, VoiceChannelRow,
     VoiceChannelManager,
 };
 
@@ -84,7 +84,7 @@ pub async fn channel_creator<
         }
     };
 
-    let row = VoiceChannelData::new(vc.id, new.user_id);
+    let row = VoiceChannelRow::new(vc.id, new.user_id);
     row.save::<Db, ChannelManager>(pool).await?;
 
     Ok(())

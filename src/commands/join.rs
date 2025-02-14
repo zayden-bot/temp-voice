@@ -6,7 +6,7 @@ use serenity::all::{
 };
 use serenity::all::{EditInteractionResponse, ResolvedValue};
 
-use crate::{Error, Result, VoiceChannelData};
+use crate::{Error, Result, VoiceChannelRow};
 
 pub async fn join(
     ctx: &Context,
@@ -14,7 +14,7 @@ pub async fn join(
     mut options: HashMap<&str, ResolvedValue<'_>>,
     guild_id: GuildId,
     channel_id: ChannelId,
-    row: &VoiceChannelData,
+    row: &VoiceChannelRow,
 ) -> Result<()> {
     interaction.defer_ephemeral(ctx).await.unwrap();
 

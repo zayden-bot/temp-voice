@@ -6,14 +6,14 @@ use serenity::all::{
 };
 
 use crate::error::PermissionError;
-use crate::{Error, VoiceChannelData};
+use crate::{Error, VoiceChannelRow};
 
 pub async fn unblock(
     ctx: &Context,
     interaction: &CommandInteraction,
     mut options: HashMap<&str, ResolvedValue<'_>>,
     channel_id: ChannelId,
-    row: &VoiceChannelData,
+    row: &VoiceChannelRow,
 ) -> Result<(), Error> {
     interaction.defer_ephemeral(ctx).await.unwrap();
 

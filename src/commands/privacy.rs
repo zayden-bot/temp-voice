@@ -6,7 +6,7 @@ use serenity::all::{
 };
 
 use crate::error::PermissionError;
-use crate::{Error, VoiceChannelData};
+use crate::{Error, VoiceChannelRow};
 
 pub async fn privacy(
     ctx: &Context,
@@ -14,7 +14,7 @@ pub async fn privacy(
     mut options: HashMap<&str, ResolvedValue<'_>>,
     guild_id: GuildId,
     channel_id: ChannelId,
-    row: &VoiceChannelData,
+    row: &VoiceChannelRow,
 ) -> Result<(), Error> {
     interaction.defer_ephemeral(ctx).await.unwrap();
 

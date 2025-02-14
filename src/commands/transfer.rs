@@ -7,7 +7,7 @@ use serenity::all::{
 use sqlx::{Database, Pool};
 
 use crate::error::PermissionError;
-use crate::{Error, Result, VoiceChannelData, VoiceChannelManager};
+use crate::{Error, Result, VoiceChannelManager, VoiceChannelRow};
 
 pub async fn transfer<Db: Database, Manager: VoiceChannelManager<Db>>(
     ctx: &Context,
@@ -15,7 +15,7 @@ pub async fn transfer<Db: Database, Manager: VoiceChannelManager<Db>>(
     pool: &Pool<Db>,
     mut options: HashMap<&str, ResolvedValue<'_>>,
     channel_id: ChannelId,
-    mut row: VoiceChannelData,
+    mut row: VoiceChannelRow,
 ) -> Result<()> {
     interaction.defer_ephemeral(ctx).await.unwrap();
 
@@ -28,7 +28,7 @@ pub async fn transfer<Db: Database, Manager: VoiceChannelManager<Db>>(
         _ => unreachable!("User option is required"),
     };
 
-    row.owner_id = user.id;
+    row.set_owner(user.id);
     row.save::<Db, Manager>(pool).await?;
 
     channel_id

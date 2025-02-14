@@ -5,7 +5,7 @@ use serenity::all::{
 use sqlx::{Database, Pool};
 
 use crate::error::PermissionError;
-use crate::{Error, Result, VoiceChannelData, VoiceChannelManager};
+use crate::{Error, Result, VoiceChannelRow, VoiceChannelManager};
 
 pub async fn reset<Db: Database, Manager: VoiceChannelManager<Db>>(
     ctx: &Context,
@@ -13,7 +13,7 @@ pub async fn reset<Db: Database, Manager: VoiceChannelManager<Db>>(
     pool: &Pool<Db>,
     guild_id: GuildId,
     channel_id: ChannelId,
-    mut row: VoiceChannelData,
+    mut row: VoiceChannelRow,
 ) -> Result<()> {
     interaction.defer_ephemeral(ctx).await.unwrap();
 

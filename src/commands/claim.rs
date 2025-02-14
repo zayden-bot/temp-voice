@@ -4,14 +4,14 @@ use serenity::all::{
 };
 use sqlx::{Database, Pool};
 
-use crate::{Error, VoiceChannelData, VoiceChannelManager, VoiceStateCache};
+use crate::{Error, VoiceChannelManager, VoiceChannelRow, VoiceStateCache};
 
 pub async fn claim<Db: Database, Manager: VoiceChannelManager<Db>>(
     ctx: &Context,
     interaction: &CommandInteraction,
     pool: &Pool<Db>,
     channel_id: ChannelId,
-    row: Option<VoiceChannelData>,
+    row: Option<VoiceChannelRow>,
 ) -> Result<(), Error> {
     interaction.defer_ephemeral(ctx).await.unwrap();
 
@@ -23,14 +23,14 @@ pub async fn claim<Db: Database, Manager: VoiceChannelManager<Db>>(
 
             row
         }
-        None => VoiceChannelData::new(channel_id, interaction.user.id),
+        None => VoiceChannelRow::new(channel_id, interaction.user.id),
     };
 
     if !row.is_persistent() && is_claimable(ctx, &row).await {
         return Err(Error::OwnerInChannel);
     }
 
-    row.owner_id = interaction.user.id;
+    row.set_owner(interaction.user.id);
     row.save::<Db, Manager>(pool).await?;
 
     channel_id
@@ -56,7 +56,7 @@ pub async fn claim<Db: Database, Manager: VoiceChannelManager<Db>>(
     Ok(())
 }
 
-async fn is_claimable(ctx: &Context, channel_data: &VoiceChannelData) -> bool {
+async fn is_claimable(ctx: &Context, channel_data: &VoiceChannelRow) -> bool {
     let data = ctx.data.read().await;
 
     let owner_state = {
@@ -64,8 +64,8 @@ async fn is_claimable(ctx: &Context, channel_data: &VoiceChannelData) -> bool {
             .get::<VoiceStateCache>()
             .expect("Expected VoiceStateCache in TypeMap");
 
-        cache.get(&channel_data.owner_id)
+        cache.get(&channel_data.owner_id())
     };
 
-    owner_state.and_then(|state| state.channel_id) == Some(channel_data.id)
+    owner_state.and_then(|state| state.channel_id) == Some(channel_data.channel_id())
 }
