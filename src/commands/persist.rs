@@ -20,6 +20,14 @@ pub async fn persist<Db: Database, Manager: VoiceChannelManager<Db>>(
         return Err(Error::PremiumRequired);
     }
 
+    let persistent_count = Manager::count_persistent_channels(pool, interaction.user.id)
+        .await
+        .unwrap();
+
+    if persistent_count == 1 {
+        return Err(Error::MaxChannels);
+    }
+
     row.toggle_persist();
     let state = if row.is_persistent() {
         "enabled"
