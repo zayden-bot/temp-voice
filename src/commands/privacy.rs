@@ -37,6 +37,8 @@ pub async fn privacy(
                 )
                 .await
                 .unwrap();
+
+            return Ok(());
         }
         "open-mic" => {
             interaction
@@ -46,6 +48,8 @@ pub async fn privacy(
                 )
                 .await
                 .unwrap();
+
+            return Ok(());
         }
         _ => {}
     }
