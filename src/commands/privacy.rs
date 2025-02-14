@@ -27,6 +27,29 @@ pub async fn privacy(
         _ => "visible",
     };
 
+    match privacy {
+        "spectator" => {
+            interaction
+                .edit_response(
+                    ctx,
+                    EditInteractionResponse::new()
+                        .content("Spectator mode is not yet implemented."),
+                )
+                .await
+                .unwrap();
+        }
+        "open-mic" => {
+            interaction
+                .edit_response(
+                    ctx,
+                    EditInteractionResponse::new().content("Open mic mode is not yet implemented."),
+                )
+                .await
+                .unwrap();
+        }
+        _ => {}
+    }
+
     let everyone_role = guild_id.everyone_role();
 
     let perm = match privacy {
