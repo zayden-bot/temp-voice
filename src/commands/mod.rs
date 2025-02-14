@@ -212,37 +212,39 @@ impl VoiceCommand {
             .required(true),
         );
 
+        let create = CreateCommandOption::new(
+            CommandOptionType::SubCommand,
+            "create",
+            "Create a temporary voice channel.",
+        )
+        .add_sub_option(CreateCommandOption::new(
+            CommandOptionType::String,
+            "name",
+            "The name of the voice channel.",
+        ))
+        .add_sub_option(CreateCommandOption::new(
+            CommandOptionType::Integer,
+            "limit",
+            "The user limit of the voice channel (0-99).",
+        ))
+        .add_sub_option(
+            CreateCommandOption::new(
+                CommandOptionType::String,
+                "privacy",
+                "Lock or hide the voice channel.",
+            )
+            .add_string_choice("Spectator", "spectator")
+            .add_string_choice("Open Mic", "open-mic")
+            .add_string_choice("Lock", "lock")
+            .add_string_choice("Unlock", "unlock")
+            .add_string_choice("Invisible", "invisible")
+            .add_string_choice("Visible", "visible"),
+        );
+
         CreateCommand::new("voice")
             .description("Commands for creating and managing temporary voice channels.")
             .add_option(setup)
-            .add_option(
-                CreateCommandOption::new(
-                    CommandOptionType::SubCommand,
-                    "create",
-                    "Create a temporary voice channel.",
-                )
-                .add_sub_option(CreateCommandOption::new(
-                    CommandOptionType::String,
-                    "name",
-                    "The name of the voice channel.",
-                ))
-                .add_sub_option(CreateCommandOption::new(
-                    CommandOptionType::Integer,
-                    "limit",
-                    "The user limit of the voice channel (0-99).",
-                ))
-                .add_sub_option(
-                    CreateCommandOption::new(
-                        CommandOptionType::String,
-                        "privacy",
-                        "Lock or hide the voice channel.",
-                    )
-                    .add_string_choice("Lock", "lock")
-                    .add_string_choice("Unlock", "unlock")
-                    .add_string_choice("Invisible", "invisible")
-                    .add_string_choice("Visible", "visible"),
-                ),
-            )
+            .add_option(create)
             .add_option(
                 CreateCommandOption::new(
                     CommandOptionType::SubCommand,
@@ -285,6 +287,8 @@ impl VoiceCommand {
                         "privacy",
                         "The new privacy of the voice channel.",
                     )
+                    .add_string_choice("Spectator", "spectator")
+                    .add_string_choice("Open Mic", "open-mic")
                     .add_string_choice("Lock", "lock")
                     .add_string_choice("Unlock", "unlock")
                     .add_string_choice("Invisible", "invisible")
