@@ -11,7 +11,7 @@ use crate::Result;
 #[async_trait]
 pub trait VoiceChannelManager<Db: Database> {
     async fn get(pool: &Pool<Db>, id: ChannelId) -> sqlx::Result<Option<VoiceChannelRow>>;
-    async fn count_persistent_channels(pool: &Pool<Db>, user_id: UserId) -> Result<i32>;
+    async fn count_persistent_channels(pool: &Pool<Db>, user_id: UserId) -> sqlx::Result<i64>;
     async fn save(pool: &Pool<Db>, row: VoiceChannelRow) -> sqlx::Result<AnyQueryResult>;
     async fn delete(pool: &Pool<Db>, id: ChannelId) -> sqlx::Result<AnyQueryResult>;
 }
