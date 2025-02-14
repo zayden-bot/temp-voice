@@ -8,6 +8,7 @@ zayden-core = { git = "https://github.com/zayden-bot/slash-command-core.git", br
 async-trait = { version = "*", default-features = false }
 sqlx = { version = "*", default-features = false, features = ["any", "macros"] }
 tokio = { version = "*", default-features = false }
+futures = { version = "*", default-features = false }
 
 [dependencies.serenity]
 version = "*"

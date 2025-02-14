@@ -1,20 +1,24 @@
 use std::collections::HashMap;
 
+use futures::future;
 use serenity::all::{
-    ChannelId, CommandInteraction, Context, EditInteractionResponse, GuildId, PermissionOverwrite,
-    PermissionOverwriteType, Permissions, ResolvedValue,
+    ChannelId, CommandInteraction, Context, EditInteractionResponse, EditMember, GuildId,
+    PermissionOverwrite, PermissionOverwriteType, Permissions, ResolvedValue,
 };
+use sqlx::{Database, Pool};
 
 use crate::error::PermissionError;
-use crate::{Error, VoiceChannelRow};
+use crate::voice_channel_manager::VoiceChannelMode;
+use crate::{Error, VoiceChannelManager, VoiceChannelRow, VoiceStateCache};
 
-pub async fn privacy(
+pub async fn privacy<Db: Database, Manager: VoiceChannelManager<Db>>(
     ctx: &Context,
     interaction: &CommandInteraction,
+    pool: &Pool<Db>,
     mut options: HashMap<&str, ResolvedValue<'_>>,
     guild_id: GuildId,
     channel_id: ChannelId,
-    row: &VoiceChannelRow,
+    mut row: VoiceChannelRow,
 ) -> Result<(), Error> {
     interaction.defer_ephemeral(ctx).await.unwrap();
 
@@ -29,25 +33,28 @@ pub async fn privacy(
 
     match privacy {
         "spectator" => {
-            interaction
-                .edit_response(
-                    ctx,
-                    EditInteractionResponse::new()
-                        .content("Spectator mode is not yet implemented."),
-                )
-                .await
-                .unwrap();
+            row.mode = VoiceChannelMode::Spectator;
+            row.save::<Db, Manager>(pool).await.unwrap();
 
             return Ok(());
         }
         "open-mic" => {
-            interaction
-                .edit_response(
-                    ctx,
-                    EditInteractionResponse::new().content("Open mic mode is not yet implemented."),
-                )
-                .await
-                .unwrap();
+            let data = ctx.data.read().await;
+            let cache = data.get::<VoiceStateCache>().unwrap();
+            let futures = cache
+                .values()
+                .filter(|s| s.channel_id == Some(channel_id))
+                .map(|s| async {
+                    guild_id
+                        .edit_member(ctx, s.user_id, EditMember::new().mute(false))
+                        .await
+                        .unwrap();
+                });
+
+            future::join_all(futures).await;
+
+            row.mode = VoiceChannelMode::OpenMic;
+            row.save::<Db, Manager>(pool).await.unwrap();
 
             return Ok(());
         }
