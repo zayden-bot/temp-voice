@@ -1,13 +1,20 @@
 use serenity::all::{ChannelId, Context, EditMember, VoiceState};
 use sqlx::{Database, Pool};
 
-use crate::{voice_channel_manager::VoiceChannelMode, Result, VoiceChannelManager};
+use crate::{voice_channel_manager::VoiceChannelMode, CachedState, Result, VoiceChannelManager};
 
 pub async fn spectate<Db: Database, Manager: VoiceChannelManager<Db>>(
     ctx: &Context,
     pool: &Pool<Db>,
     new: &VoiceState,
+    old: Option<&CachedState>,
 ) -> Result<()> {
+    if let Some(old) = old {
+        if old.channel_id == new.channel_id {
+            return Ok(());
+        }
+    }
+
     if let Some(channel_id) = new.channel_id {
         on_join::<Db, Manager>(ctx, pool, new, channel_id).await;
         return Ok(());
