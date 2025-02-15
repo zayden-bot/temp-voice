@@ -32,10 +32,16 @@ async fn on_join<Db: Database, ChannelManager: VoiceChannelManager<Db>>(
     let guild_id = new.guild_id.unwrap();
 
     let builder = match ChannelManager::get(pool, channel_id).await.unwrap() {
-        Some(row) => match row.mode {
-            VoiceChannelMode::Spectator => EditMember::new().mute(true),
-            _ => EditMember::new().mute(false),
-        },
+        Some(row) => {
+            if row.is_trusted(new.user_id) {
+                EditMember::new().mute(false)
+            } else {
+                match row.mode {
+                    VoiceChannelMode::Spectator => EditMember::new().mute(true),
+                    _ => EditMember::new().mute(false),
+                }
+            }
+        }
         None => EditMember::new().mute(false),
     };
 
