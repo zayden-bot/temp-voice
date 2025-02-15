@@ -296,12 +296,10 @@ impl VoiceCommand {
                         "privacy",
                         "The new privacy of the voice channel.",
                     )
+                    .add_string_choice("Open", "open")
                     .add_string_choice("Spectator", "spectator")
-                    .add_string_choice("Open Mic", "open-mic")
                     .add_string_choice("Lock", "lock")
-                    .add_string_choice("Unlock", "unlock")
                     .add_string_choice("Invisible", "invisible")
-                    .add_string_choice("Visible", "visible")
                     .required(true),
                 ),
             )

@@ -36,7 +36,7 @@ impl VoiceChannelRow {
             invites: Vec::new(),
             password: None,
             persistent: false,
-            mode: VoiceChannelMode::Visible,
+            mode: VoiceChannelMode::Open,
         }
     }
 
@@ -136,11 +136,11 @@ impl VoiceChannelRow {
     }
 }
 
+#[derive(sqlx::Type)]
+#[sqlx(rename_all = "lowercase")]
 pub enum VoiceChannelMode {
+    Open,
     Spectator,
-    OpenMic,
     Locked,
-    Unlocked,
     Invisible,
-    Visible,
 }

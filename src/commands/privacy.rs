@@ -31,57 +31,51 @@ pub async fn privacy<Db: Database, Manager: VoiceChannelManager<Db>>(
         _ => "visible",
     };
 
-    match privacy {
-        "spectator" => {
-            row.mode = VoiceChannelMode::Spectator;
-            row.save::<Db, Manager>(pool).await.unwrap();
+    if privacy == "spectator" {
+        row.mode = VoiceChannelMode::Spectator;
+        row.save::<Db, Manager>(pool).await.unwrap();
 
-            return Ok(());
-        }
-        "open-mic" => {
-            let data = ctx.data.read().await;
-            let cache = data.get::<VoiceStateCache>().unwrap();
-            let futures = cache
-                .values()
-                .filter(|s| s.channel_id == Some(channel_id))
-                .map(|s| async {
-                    guild_id
-                        .edit_member(ctx, s.user_id, EditMember::new().mute(false))
-                        .await
-                        .unwrap();
-                });
-
-            future::join_all(futures).await;
-
-            row.mode = VoiceChannelMode::OpenMic;
-            row.save::<Db, Manager>(pool).await.unwrap();
-
-            return Ok(());
-        }
-        _ => {}
+        return Ok(());
     }
 
     let everyone_role = guild_id.everyone_role();
 
     let perm = match privacy {
+        "open" => {
+            {
+                let data = ctx.data.read().await;
+                let cache = data.get::<VoiceStateCache>().unwrap();
+
+                let futures = cache
+                    .values()
+                    .filter(|s| s.channel_id == Some(channel_id))
+                    .map(|s| async {
+                        guild_id
+                            .edit_member(ctx, s.user_id, EditMember::new().mute(false))
+                            .await
+                            .unwrap();
+                    });
+
+                future::join_all(futures).await;
+            };
+
+            row.mode = VoiceChannelMode::Open;
+            row.save::<Db, Manager>(pool).await.unwrap();
+
+            PermissionOverwrite {
+                allow: Permissions::VIEW_CHANNEL,
+                deny: Permissions::empty(),
+                kind: PermissionOverwriteType::Role(everyone_role),
+            }
+        }
         "lock" => PermissionOverwrite {
             allow: Permissions::empty(),
             deny: Permissions::CONNECT,
             kind: PermissionOverwriteType::Role(everyone_role),
         },
-        "unlock" => PermissionOverwrite {
-            allow: Permissions::CONNECT,
-            deny: Permissions::empty(),
-            kind: PermissionOverwriteType::Role(everyone_role),
-        },
         "invisible" => PermissionOverwrite {
             allow: Permissions::empty(),
             deny: Permissions::VIEW_CHANNEL,
-            kind: PermissionOverwriteType::Role(everyone_role),
-        },
-        "visible" => PermissionOverwrite {
-            allow: Permissions::VIEW_CHANNEL,
-            deny: Permissions::empty(),
             kind: PermissionOverwriteType::Role(everyone_role),
         },
         _ => unreachable!("Invalid privacy option"),
