@@ -36,8 +36,8 @@ async fn on_join<Db: Database, ChannelManager: VoiceChannelManager<Db>>(
     let guild_id = new.guild_id.unwrap();
 
     let builder = match data.mode {
-        VoiceChannelMode::Spectator => EditMember::new().mute(false),
-        _ => EditMember::new().mute(true),
+        VoiceChannelMode::Spectator => EditMember::new().mute(true),
+        _ => EditMember::new().mute(false),
     };
 
     guild_id
