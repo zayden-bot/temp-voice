@@ -35,6 +35,14 @@ pub async fn privacy<Db: Database, Manager: VoiceChannelManager<Db>>(
         row.mode = VoiceChannelMode::Spectator;
         row.save::<Db, Manager>(pool).await.unwrap();
 
+        interaction
+            .edit_response(
+                ctx,
+                EditInteractionResponse::new().content("Channel privacy updated."),
+            )
+            .await
+            .unwrap();
+
         return Ok(());
     }
 
