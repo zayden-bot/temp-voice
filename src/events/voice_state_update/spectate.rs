@@ -7,7 +7,7 @@ pub async fn spectate<Db: Database, Manager: VoiceChannelManager<Db>>(
     ctx: &Context,
     pool: &Pool<Db>,
     new: &VoiceState,
-    old: Option<CachedState>,
+    old: Option<&CachedState>,
 ) -> Result<()> {
     if let Some(channel_id) = new.channel_id {
         on_join::<Db, Manager>(ctx, pool, new, channel_id).await;
@@ -16,7 +16,7 @@ pub async fn spectate<Db: Database, Manager: VoiceChannelManager<Db>>(
 
     if let Some(old) = old {
         if let Some(channel_id) = old.channel_id {
-            on_leave::<Db, Manager>(ctx, pool, &old, channel_id).await;
+            on_leave::<Db, Manager>(ctx, pool, old, channel_id).await;
             return Ok(());
         }
     }

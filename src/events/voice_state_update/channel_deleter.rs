@@ -10,7 +10,7 @@ pub async fn channel_deleter<
 >(
     ctx: &Context,
     pool: &Pool<Db>,
-    old: Option<CachedState>,
+    old: Option<&CachedState>,
 ) -> Result<()> {
     let old = match old {
         Some(old) => old,
