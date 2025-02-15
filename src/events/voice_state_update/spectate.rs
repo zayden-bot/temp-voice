@@ -29,15 +29,14 @@ async fn on_join<Db: Database, ChannelManager: VoiceChannelManager<Db>>(
     new: &VoiceState,
     channel_id: ChannelId,
 ) {
-    let Some(data) = ChannelManager::get(pool, channel_id).await.unwrap() else {
-        return;
-    };
-
     let guild_id = new.guild_id.unwrap();
 
-    let builder = match data.mode {
-        VoiceChannelMode::Spectator => EditMember::new().mute(true),
-        _ => EditMember::new().mute(false),
+    let builder = match ChannelManager::get(pool, channel_id).await.unwrap() {
+        Some(row) => match row.mode {
+            VoiceChannelMode::Spectator => EditMember::new().mute(true),
+            _ => EditMember::new().mute(false),
+        },
+        None => EditMember::new().mute(false),
     };
 
     guild_id
