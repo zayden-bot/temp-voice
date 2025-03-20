@@ -1,4 +1,6 @@
-use serenity::all::{ChannelId, Context, EditMember, VoiceState};
+use serenity::all::{
+    ChannelId, Context, DiscordJsonError, EditMember, ErrorResponse, HttpError, VoiceState,
+};
 use sqlx::{Database, Pool};
 
 use crate::{voice_channel_manager::VoiceChannelMode, CachedState, Result, VoiceChannelManager};
@@ -45,8 +47,14 @@ async fn on_join<Db: Database, ChannelManager: VoiceChannelManager<Db>>(
         None => EditMember::new().mute(false),
     };
 
-    guild_id
-        .edit_member(ctx, new.user_id, builder)
-        .await
-        .unwrap();
+    match guild_id.edit_member(ctx, new.user_id, builder).await {
+        // User is not connected to voice channel
+        Err(serenity::Error::Http(HttpError::UnsuccessfulRequest(ErrorResponse {
+            error: DiscordJsonError { code: 40032, .. },
+            ..
+        }))) => {}
+        e => {
+            e.unwrap();
+        }
+    };
 }
