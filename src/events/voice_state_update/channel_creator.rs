@@ -5,8 +5,8 @@ use serenity::all::{
 use sqlx::{Database, Pool};
 
 use crate::{
-    delete_voice_channel_if_inactive, Result, TempVoiceGuildManager, VoiceChannelRow,
-    VoiceChannelManager,
+    delete_voice_channel_if_inactive, Result, TempVoiceGuildManager, VoiceChannelManager,
+    VoiceChannelRow,
 };
 
 pub async fn channel_creator<
@@ -51,6 +51,8 @@ pub async fn channel_creator<
         deny: Permissions::empty(),
         kind: PermissionOverwriteType::Member(member.user.id),
     }];
+
+    println!("Creating channel for {}", member.display_name());
 
     let vc_builder = CreateChannel::new(format!("{}'s Channel", member.display_name()))
         .kind(ChannelType::Voice)
