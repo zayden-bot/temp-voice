@@ -12,11 +12,14 @@ pub async fn persist<Db: Database, Manager: VoiceChannelManager<Db>>(
 ) -> Result<()> {
     interaction.defer_ephemeral(ctx).await.unwrap();
 
-    if row.is_owner(interaction.user.id) {
+    let member = interaction.member.as_ref().unwrap();
+    let is_moderator = member.permissions.unwrap().manage_channels();
+
+    if row.is_owner(interaction.user.id) && !is_moderator {
         return Err(Error::MissingPermissions(PermissionError::NotOwner));
     }
 
-    if interaction.member.as_ref().unwrap().premium_since.is_none() {
+    if member.premium_since.is_none() && !is_moderator {
         return Err(Error::PremiumRequired);
     }
 
@@ -24,7 +27,7 @@ pub async fn persist<Db: Database, Manager: VoiceChannelManager<Db>>(
         .await
         .unwrap();
 
-    if persistent_count == 1 {
+    if persistent_count == 1 && !is_moderator {
         return Err(Error::MaxChannels);
     }
 
