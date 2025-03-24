@@ -125,16 +125,7 @@ impl VoiceCommand {
                 limit(ctx, interaction, options, channel_id, &row).await?;
             }
             "privacy" => {
-                privacy::<Db, ChannelManager>(
-                    ctx,
-                    interaction,
-                    pool,
-                    options,
-                    guild_id,
-                    channel_id,
-                    row,
-                )
-                .await?;
+                privacy(ctx, interaction, options, guild_id, channel_id, row).await?;
             }
             "waiting" => {
                 // waiting(ctx, interaction, guild_id, options).await?;
