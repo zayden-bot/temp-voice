@@ -17,7 +17,9 @@ pub async fn channel_deleter<
         None => return Ok(()),
     };
 
-    let guild_data = GuildManager::get(pool, old.guild_id).await.unwrap();
+    let Ok(guild_data) = GuildManager::get(pool, old.guild_id).await else {
+        return Ok(());
+    };
 
     let channel_id = match old.channel_id {
         Some(channel_id) if channel_id != guild_data.creator_channel() => channel_id,
