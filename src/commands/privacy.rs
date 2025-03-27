@@ -100,12 +100,17 @@ fn spectate_builder<'a>(
         }
     }
 
-    let everyone_perm = perms
+    match perms
         .iter_mut()
         .find(|perm| matches!(perm.kind, PermissionOverwriteType::Role(role) if role == everyone))
-        .unwrap();
-
-    everyone_perm.deny |= Permissions::SPEAK;
+    {
+        Some(perm) => perm.deny |= Permissions::SPEAK,
+        None => perms.push(PermissionOverwrite {
+            allow: Permissions::empty(),
+            deny: Permissions::SPEAK,
+            kind: PermissionOverwriteType::Role(everyone),
+        }),
+    }
 
     EditChannel::new().permissions(perms)
 }
