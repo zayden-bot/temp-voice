@@ -48,8 +48,6 @@ pub async fn channel_creator<
         kind: PermissionOverwriteType::Member(member.user.id),
     }];
 
-    println!("Creating channel for {}", member.display_name());
-
     let vc_builder = CreateChannel::new(format!("{}'s Channel", member.display_name()))
         .kind(ChannelType::Voice)
         .category(creator_category)
