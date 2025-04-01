@@ -439,7 +439,7 @@ impl VoiceCommand {
                 .add_sub_option(
                     CreateCommandOption::new(
                         CommandOptionType::Integer,
-                        "bitrate",
+                        "kbps",
                         "The new bitrate of the voice channel.",
                     )
                     .required(true),
