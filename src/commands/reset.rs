@@ -5,7 +5,7 @@ use serenity::all::{
 use sqlx::{Database, Pool};
 
 use crate::error::PermissionError;
-use crate::{Error, Result, VoiceChannelRow, VoiceChannelManager};
+use crate::{Error, Result, VoiceChannelManager, VoiceChannelRow};
 
 pub async fn reset<Db: Database, Manager: VoiceChannelManager<Db>>(
     ctx: &Context,
@@ -29,7 +29,7 @@ pub async fn reset<Db: Database, Manager: VoiceChannelManager<Db>>(
         .await
         .unwrap()
         .remove(&channel_id)
-        .ok_or(Error::channel_not_found(channel_id))?;
+        .ok_or(Error::ChannelNotFound(channel_id))?;
 
     let everyone_permissions = channel
         .permission_overwrites

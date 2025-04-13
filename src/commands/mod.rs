@@ -48,7 +48,7 @@ use serenity::all::{
 use zayden_core::parse_options;
 
 use crate::{
-    get_voice_state, guild_manager::TempVoiceGuildManager, Error, Result, VoiceChannelManager,
+    Error, Result, VoiceChannelManager, get_voice_state, guild_manager::TempVoiceGuildManager,
 };
 
 pub struct VoiceCommand;
@@ -109,7 +109,7 @@ impl VoiceCommand {
             return Ok(());
         }
 
-        let row = row.ok_or_else(|| Error::channel_not_found(channel_id))?;
+        let row = row.ok_or(Error::ChannelNotFound(channel_id))?;
 
         match command.name {
             "join" => {
