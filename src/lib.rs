@@ -49,7 +49,7 @@ impl From<&VoiceState> for CachedState {
 pub struct VoiceStateCache;
 
 impl VoiceStateCache {
-    pub async fn new_with_guild(guild: &Guild) -> HashMap<UserId, CachedState> {
+    pub fn new_with_guild(guild: &Guild) -> HashMap<UserId, CachedState> {
         let mut cache = HashMap::new();
 
         for (user_id, state) in guild
