@@ -8,8 +8,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use serenity::all::{
-    ChannelId, Context, Guild, GuildChannel, GuildId, LightMethod, Request, Route, UserId,
-    VoiceState,
+    ChannelId, Context, GuildChannel, GuildId, LightMethod, Request, Route, UserId, VoiceState,
 };
 use serenity::prelude::TypeMapKey;
 
@@ -49,23 +48,6 @@ impl From<&VoiceState> for CachedState {
 pub struct VoiceStateCache;
 
 impl VoiceStateCache {
-    pub fn new_with_guild(guild: &Guild) -> HashMap<UserId, CachedState> {
-        let mut cache = HashMap::new();
-
-        for (user_id, state) in guild
-            .voice_states
-            .iter()
-            .filter(|(_, state)| state.channel_id.is_some())
-        {
-            cache.insert(
-                *user_id,
-                CachedState::new(state.channel_id, guild.id, state.user_id),
-            );
-        }
-
-        cache
-    }
-
     pub async fn update(ctx: &Context, new: &VoiceState) -> Result<Option<CachedState>> {
         let mut data = ctx.data.write().await;
         let cache = data
