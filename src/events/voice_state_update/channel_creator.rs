@@ -5,7 +5,7 @@ use serenity::all::{
 use sqlx::{Database, Pool};
 
 use crate::{
-    Result, TempVoiceGuildManager, VoiceChannelManager, VoiceChannelRow,
+    Error, Result, TempVoiceGuildManager, VoiceChannelManager, VoiceChannelRow,
     delete_voice_channel_if_inactive,
 };
 
@@ -53,7 +53,10 @@ pub async fn channel_creator<
         .category(creator_category)
         .permissions(perms);
 
-    let vc = guild_id.create_channel(ctx, vc_builder).await?;
+    let vc = guild_id
+        .create_channel(ctx, vc_builder)
+        .await
+        .map_err(|e| Error::serenity(e, "Create Channel"))?;
 
     match guild_id.move_member(ctx, member.user.id, vc.id).await {
         // Target user is not connected to voice.
