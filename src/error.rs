@@ -61,6 +61,17 @@ impl std::fmt::Display for Error {
                     ..
                 },
             ))) => zayden_core::Error::ChannelDeleted.fmt(f),
+            Self::Serenity(serenity::Error::Http(HttpError::UnsuccessfulRequest(
+                ErrorResponse {
+                    error: DiscordJsonError { code: 50013, .. },
+                    ..
+                },
+            ))) => {
+                write!(
+                    f,
+                    "I'm missing permissions perform that action. Please contact a server admin to resolve this."
+                )
+            }
             Self::Serenity(e) => unimplemented!("Unhandled serenity error: {e:?}"),
         }
     }
