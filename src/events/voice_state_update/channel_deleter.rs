@@ -36,17 +36,14 @@ pub async fn channel_deleter<
     }
 
     let channel = match channel_id.to_channel(ctx).await {
-        Ok(channel) => channel,
-        // Channel already deleted, ignore this error
         Err(serenity::Error::Http(HttpError::UnsuccessfulRequest(ErrorResponse {
             error: DiscordJsonError { code: 10003, .. },
             ..
         }))) => {
             return Ok(());
         }
-        e => e.unwrap(),
+        r => r?,
     };
-
     let category = guild_data.category();
 
     if channel

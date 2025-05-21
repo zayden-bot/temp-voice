@@ -96,8 +96,7 @@ impl VoiceCommand {
         let channel_id = match options.remove("channel") {
             Some(ResolvedValue::Channel(channel)) => channel.id,
             _ => get_voice_state(ctx, guild_id, interaction.user.id)
-                .await
-                .map_err(|_| Error::MemberNotInVoiceChannel)?
+                .await?
                 .channel_id
                 .ok_or(Error::MemberNotInVoiceChannel)?,
         };

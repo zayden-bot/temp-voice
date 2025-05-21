@@ -1,4 +1,4 @@
-use serenity::all::{ChannelId, Mentionable};
+use serenity::all::{ChannelId, DiscordJsonError, ErrorResponse, HttpError, Mentionable};
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
@@ -14,11 +14,12 @@ pub enum Error {
     MemberNotInVoiceChannel,
     OwnerInChannel,
     InvalidPassword,
-    PremiumRequired,
     UserIsOwner,
     MaxChannels,
     MissingPermissions(PermissionError),
     ChannelNotFound(ChannelId),
+
+    Serenity(serenity::Error),
 }
 
 impl std::fmt::Display for Error {
@@ -26,7 +27,10 @@ impl std::fmt::Display for Error {
         match self {
             Error::MissingGuildId => zayden_core::Error::MissingGuildId.fmt(f),
             Error::MemberNotInVoiceChannel => {
-                write!(f, "You must be in a voice channel or use the `channel` option to specify a channel to use this command.")
+                write!(
+                    f,
+                    "You must be in a voice channel or use the `channel` option to specify a channel to use this command."
+                )
             }
             Error::OwnerInChannel => {
                 write!(
@@ -35,7 +39,6 @@ impl std::fmt::Display for Error {
                 )
             }
             Error::InvalidPassword => write!(f, "Invalid channel password."),
-            Error::PremiumRequired => write!(f, "Only Server Boosters can use this command."),
             Error::UserIsOwner => write!(f, "You are already the owner of this channel."),
             Error::MaxChannels => write!(
                 f,
@@ -52,8 +55,21 @@ impl std::fmt::Display for Error {
                 "Channel not found: {}\nTry using `/voice claim` to claim the channel.",
                 id.mention()
             ),
+            Self::Serenity(serenity::Error::Http(HttpError::UnsuccessfulRequest(
+                ErrorResponse {
+                    error: DiscordJsonError { code: 10003, .. },
+                    ..
+                },
+            ))) => zayden_core::Error::ChannelDeleted.fmt(f),
+            Self::Serenity(e) => unimplemented!("Unhandled serenity error: {e:?}"),
         }
     }
 }
 
 impl std::error::Error for Error {}
+
+impl From<serenity::Error> for Error {
+    fn from(value: serenity::Error) -> Self {
+        Self::Serenity(value)
+    }
+}
