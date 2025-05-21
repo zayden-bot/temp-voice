@@ -19,10 +19,6 @@ pub async fn persist<Db: Database, Manager: VoiceChannelManager<Db>>(
         return Err(Error::MissingPermissions(PermissionError::NotOwner));
     }
 
-    if member.premium_since.is_none() && !is_moderator {
-        return Err(Error::PremiumRequired);
-    }
-
     let persistent_count = Manager::count_persistent_channels(pool, interaction.user.id)
         .await
         .unwrap();
