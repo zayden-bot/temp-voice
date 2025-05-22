@@ -36,8 +36,14 @@ pub async fn channel_deleter<
     }
 
     let channel = match channel_id.to_channel(ctx).await {
+        // Unknown channel
         Err(serenity::Error::Http(HttpError::UnsuccessfulRequest(ErrorResponse {
             error: DiscordJsonError { code: 10003, .. },
+            ..
+        })))
+        // Missing access
+        | Err(serenity::Error::Http(HttpError::UnsuccessfulRequest(ErrorResponse {
+            error: DiscordJsonError { code: 50001, .. },
             ..
         }))) => {
             return Ok(());
