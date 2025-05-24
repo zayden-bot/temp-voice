@@ -86,14 +86,14 @@ pub async fn delete_voice_channel_if_inactive(
     guild_id: GuildId,
     user_id: UserId,
     vc: &GuildChannel,
-) -> Result<bool> {
+) -> bool {
     tokio::time::sleep(Duration::from_secs(60)).await;
 
     match get_voice_state(ctx, guild_id, user_id).await {
-        Ok(voice_state) if voice_state.channel_id == Some(vc.id) => Ok(false),
+        Ok(voice_state) if voice_state.channel_id == Some(vc.id) => false,
         _ => {
             vc.delete(ctx).await.unwrap();
-            Ok(true)
+            true
         }
     }
 }

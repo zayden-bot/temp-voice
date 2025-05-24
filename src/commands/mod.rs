@@ -43,7 +43,7 @@ use untrust::untrust;
 
 use serenity::all::{
     CommandInteraction, CommandOptionType, Context, CreateCommand, CreateCommandOption,
-    ResolvedValue,
+    DiscordJsonError, ErrorResponse, HttpError, ResolvedValue,
 };
 use zayden_core::parse_options;
 
@@ -95,10 +95,15 @@ impl VoiceCommand {
 
         let channel_id = match options.remove("channel") {
             Some(ResolvedValue::Channel(channel)) => channel.id,
-            _ => get_voice_state(ctx, guild_id, interaction.user.id)
-                .await?
-                .channel_id
-                .ok_or(Error::MemberNotInVoiceChannel)?,
+            _ => match get_voice_state(ctx, guild_id, interaction.user.id).await {
+                Ok(state) => state.channel_id.ok_or(Error::MemberNotInVoiceChannel)?,
+                // Unknown Voice State
+                Err(serenity::Error::Http(HttpError::UnsuccessfulRequest(ErrorResponse {
+                    error: DiscordJsonError { code: 10065, .. },
+                    ..
+                }))) => return Ok(()),
+                r => r?.channel_id.ok_or(Error::MemberNotInVoiceChannel)?,
+            },
         };
 
         let row = ChannelManager::get(pool, channel_id).await.unwrap();

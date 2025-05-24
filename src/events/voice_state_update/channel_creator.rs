@@ -78,7 +78,7 @@ pub async fn channel_creator<
                 .await
                 .unwrap();
 
-            if delete_voice_channel_if_inactive(ctx, guild_id, member.user.id, &vc).await? {
+            if delete_voice_channel_if_inactive(ctx, guild_id, member.user.id, &vc).await {
                 return Ok(());
             }
         }
