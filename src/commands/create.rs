@@ -8,8 +8,8 @@ use serenity::all::{DiscordJsonError, EditInteractionResponse, ErrorResponse, Ht
 use sqlx::{Database, Pool};
 
 use crate::{
-    delete_voice_channel_if_inactive, Error, TempVoiceGuildManager, VoiceChannelRow,
-    VoiceChannelManager,
+    Error, TempVoiceGuildManager, VoiceChannelManager, VoiceChannelRow,
+    delete_voice_channel_if_inactive,
 };
 
 pub async fn create<
@@ -101,7 +101,7 @@ pub async fn create<
         ..
     }))) = move_result
     {
-        if delete_voice_channel_if_inactive(ctx, guild_id, interaction.user.id, &vc).await? {
+        if delete_voice_channel_if_inactive(ctx, guild_id, interaction.user.id, &vc).await {
             return Ok(());
         }
     }
